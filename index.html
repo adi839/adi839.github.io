@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Naruto Personal Hub</title>
+    
+    <!-- Chosen Palette: Naruto Orange & Ninja Night -->
+    <!-- Application Structure Plan: A single-screen, non-scrolling link hub with a Naruto anime aesthetic. The structure features a high-quality static image background and a central, semi-transparent card for the profile and links. -->
+    <!-- Visualization & Content Choices: Goal: Naruto anime aesthetic -> Method: A high-quality background image of Naruto overlooking Konoha. Goal: Thematic UI -> Method: A color palette based on Naruto's iconic orange, a clean card layout, and a dedicated on/off button for lofi music. Goal: Interactive Links -> Method: A vertical list of buttons with icons and text, featuring a subtle glow effect. Justification: This model fulfills the user's specific request for a Naruto-themed background while maintaining the functional structure. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Firebase SDK - Added for Firestore -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global variables for Firebase, defined by the Canvas environment
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let app;
+        let db;
+        let auth;
+        let userId;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                // Anonymous or custom token authentication
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                userId = auth.currentUser?.uid || crypto.randomUUID();
+
+                // Initialize and update visitor counter
+                const counterRef = doc(db, `artifacts/${appId}/public/data/visitor_counter`, 'total_visits');
+
+                // Increment counter on each page load
+                await setDoc(counterRef, { count: increment(1) }, { merge: true });
+
+                // Listen for real-time counter updates
+                onSnapshot(counterRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        const count = docSnap.data().count;
+                        document.getElementById('visitor-count').textContent = count;
+                    } else {
+                        document.getElementById('visitor-count').textContent = '0';
+                    }
+                });
+
+            } catch (error) {
+                console.error("Error initializing Firebase or visitor counter:", error);
+                // Display a user-friendly error message, do not use alert()
+                const errorMessageDiv = document.createElement('div');
+                errorMessageDiv.className = 'text-red-500 mt-4';
+                errorMessageDiv.textContent = 'An error occurred while loading the visitor counter. Please try again later.';
+                document.querySelector('.content-card').appendChild(errorMessageDiv);
+            }
+        });
+    </script>
+
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(-45deg, #0a0514, #2c2143, #ff8c00, #e85d04);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            overflow: hidden;
+        }
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .content-card {
+            background: rgba(10, 5, 20, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(249, 115, 22, 0.2); /* orange-500 */
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3); /* More pronounced shadow for the card */
+        }
+        
+        /* Typing animation cursor */
+        #animated-subtitle::after {
+            content: '_';
+            animation: blink 1s infinite;
+            color: #f97316; /* orange-500 */
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        /* Style for link buttons */
+        .link-button {
+            transition: all 0.3s ease-in-out;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+        .link-button:hover {
+            transform: translateY(-3px); /* Subtle lift effect */
+            box-shadow: 0 8px 20px rgba(249, 115, 22, 0.3); /* Orange-tinted shadow */
+        }
+
+        /* Style for music button */
+        #music-btn {
+            background-color: rgba(249, 115, 22, 0.1); /* Transparent orange */
+            border-radius: 50%; /* Circular shape */
+            padding: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease-in-out;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        #music-btn:hover {
+            background-color: rgba(249, 115, 22, 0.3);
+            transform: scale(1.1); /* Subtle enlarge on hover */
+        }
+    </style>
+</head>
+<body class="text-white">
+
+    <!-- Main Content -->
+    <div class="min-h-screen flex flex-col items-center justify-center p-4 relative z-10">
+        <div class="content-card w-full max-w-sm mx-auto rounded-lg p-8 text-center">
+            
+            <img src="https://placehold.co/128x128/0a0514/f97316?text=G" alt="Avatar" class="w-24 h-24 rounded-full mx-auto mb-4 border-2 border-orange-500/50 shadow-lg">
+            
+            <h1 class="text-3xl font-bold text-white" style="text-shadow: 0 0 10px #f97316;">Gabytzu</h1>
+            <p class="text-orange-300/80 text-sm mt-1">14 years old</p> 
+
+            <!-- Audio Toggle - Moved inside the content-card for better positioning -->
+            <button id="music-btn" class="mt-4 mb-2 text-gray-400 hover:text-orange-400 transition-colors z-20 mx-auto">
+                <svg id="music-icon-on" xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+                <svg id="music-icon-off" xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
+            </button>
+            <p id="audio-status" class="text-orange-300/80 text-xs mt-1 h-4"></p> <!-- Audio status message -->
+            <p id="animated-subtitle" class="text-orange-300/80 mt-2 h-6"></p>
+
+            <!-- Visitor Counter -->
+            <div class="mt-4 text-orange-300/80 text-sm">
+                Visitors: <span id="visitor-count" class="font-bold text-orange-400">0</span>
+            </div>
+
+            <div class="space-y-4 mt-8 w-full">
+                <a href="https://discord.gg/tUcEZ6kp5a" class="link-button flex items-center justify-center gap-4 w-full bg-black/30 hover:bg-orange-500/20 border border-orange-500/20 hover:border-orange-400 transition-all duration-300 p-4 rounded-md font-semibold">
+                    <!-- Updated Discord Icon (official logo) -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" class="fill-current"><path d="M20.317 4.431c-1.457-.791-3.138-1.404-4.925-1.748a.502.502 0 0 0-.476.549c.143.737.318 1.484.502 2.221-2.25-.453-4.42-1.185-6.398-2.221a.502.502 0 0 0-.476-.549c-1.787.344-3.468.957-4.925 1.748a.502.502 0 0 0-.21.846l.12.102c2.14.98 4.132 2.24 5.923 3.753a.502.502 0 0 0 .695 0c1.79-1.513 3.782-2.773 5.923-3.753l.12-.102a.502.502 0 0 0-.21-.846zM9.73 14.333c-.99 0-1.79-.81-1.79-1.81s.8-1.81 1.79-1.81c.99 0 1.79.81 1.79 1.81s-.8 1.81-1.79 1.81zm4.54 0c-.99 0-1.79-.81-1.79-1.81s.8-1.81 1.79-1.81c.99 0 1.79.81 1.79 1.81s-.8 1.81-1.79 1.81z"/><path d="M3.734 8.031c0 4.88 3.08 8.843 6.85 9.796a.502.502 0 0 0 .546-.376c.15-.64.33-1.28.52-1.92.05-.16.1-.32.16-.48a.502.502 0 0 0-.3-.6c-.9-.4-1.7-.9-2.5-1.5a.502.502 0 0 1-.06-.7c.3-.3.6-.6.9-.9.2-.2.5-.2.7-.1l.1.1c.9.5 1.8 1 2.8 1.4.3.1.6.1.9 0 .9-.4 1.8-.9 2.8-1.4l.1-.1c.2-.1.5-.1.7.1.3.3.6.6.9.9.2.2.1.5-.1.7-.8.6-1.6 1.1-2.5 1.5a.502.502 0 0 0-.3.6c.1.2.1.3.2.5.2.6.4 1.3.5 1.9a.502.502 0 0 0 .5.4c3.77-.953 6.85-4.916 6.85-9.796C20.266 8.031 3.734 8.031 3.734 8.031z"/></svg>
+                    <span>Discord</span>
+                </a>
+                   <a href="https://www.youtube.com/@Raccoon_Team" class="link-button flex items-center justify-center gap-4 w-full bg-black/30 hover:bg-orange-500/20 border border-orange-500/20 hover:border-orange-400 transition-all duration-300 p-4 rounded-md font-semibold">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" class="fill-current"><path d="M21.582 6.186A2.682 2.682 0 0 0 19.7 4.304C18 .38 12 .38 12 .38s6 0 7.7-.324A2.682 2.682 0 0 0 2.418 6.186 28.02 28.02 0 0 0 2 12a28.02 28.02 0 0 0 .418 5.814A2.682 2.682 0 0 0 4.3 19.696C6 20.02 12 20.02 12 20.02s6 0 7.7-.324a2.682 2.682 0 0 0 1.882-1.882A28.02 28.02 0 0 0 22 12a28.02 28.02 0 0 0-.418-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                    <span>YouTube</span>
+                </a>
+                <a href="https://gameunlocker.sell.app/" class="link-button flex items-center justify-center gap-4 w-full bg-black/30 hover:bg-orange-500/20 border border-orange-500/20 hover:border-orange-400 transition-all duration-300 p-4 rounded-md font-semibold">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+                    <span>Shop</span>
+                </a>
+                   <a href="https://www.roblox.com/users/2767596730/profile?friendshipSourceType=PlayerSearch" class="link-button flex items-center justify-center gap-4 w-full bg-black/30 hover:bg-orange-500/20 border border-orange-500/20 hover:border-orange-400 transition-all duration-300 p-4 rounded-md font-semibold">
+                    <!-- Updated Roblox Icon (generic cube/block) -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5z"/></svg>
+                    <span>Roblox</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Typing animation logic
+            const animatedSubtitle = document.getElementById('animated-subtitle');
+            if (animatedSubtitle) {
+                const phrases = ["IT Developer", "Gamer", "Problem Solver"];
+                let phraseIndex = 0;
+                let charIndex = 0;
+                let isDeleting = false;
+
+                function typeAnimation() {
+                    const currentPhrase = phrases[phraseIndex];
+                    if (isDeleting) {
+                        animatedSubtitle.textContent = currentPhrase.substring(0, charIndex - 1);
+                        charIndex--;
+                    } else {
+                        animatedSubtitle.textContent = currentPhrase.substring(0, charIndex + 1);
+                        charIndex++;
+                    }
+
+                    let typeSpeed = 150;
+                    if (isDeleting) typeSpeed /= 2;
+
+                    if (!isDeleting && charIndex === currentPhrase.length) {
+                        typeSpeed = 2000;
+                        isDeleting = true;
+                    } else if (isDeleting && charIndex === 0) {
+                        isDeleting = false;
+                        phraseIndex = (phraseIndex + 1) % phrases.length;
+                        typeSpeed = 500;
+                    }
+                    setTimeout(typeAnimation, typeSpeed);
+                }
+                setTimeout(typeAnimation, 1000);
+            }
+            
+            // Music Toggle
+            const musicBtn = document.getElementById('music-btn');
+            const onIcon = document.getElementById('music-icon-on');
+            const offIcon = document.getElementById('music-icon-off');
+            const audioStatus = document.getElementById('audio-status'); // Element for audio status
+            let musicPlaying = false;
+            let lofiPlayer = null; // Initialize as null
+            let isAudioContextInitialized = false; // Flag to ensure Tone.js context is started only once
+
+            // Updated music URL
+            const musicUrl = "https://nnnu.ummn.nu/api/v1/download?sig=Z5XSmA%2F3P3pBvw6GFpCgLDnpxYp%2FwKHeWSN4RQKTwPjGKCZoYzW0QdCaob0CQfduXPDWkdUqG11mMdiAO64PlTG7ZQzQ3Kp4PEdUAOwmCZMF7SHBBziG8f6THqx8z63waykyBOVnpQ%2FrYZZnxGBMyEseIipqsDf2OSk38c5A5dfHMmU034imsArxqkFFmo%2BSzS5iWLxDgtxpGHBdUDDTefNZvY%2B3R99DGZs2XShn27cgT7JzQDqfXfZO%2B3xHpLKfIKKQlZ4DWW%2B954a3Vk4oOt%2Bk3tYCgDLHR8Zes65cltIwdP8349fWyYzXywwgZuUH68LQck%2BVuAAC4tFVXV%2FysQ%3D%3D&s=1&v=pXEGZ0V0rvw&f=mp3&_=0.9338297961352192"; 
+
+            musicBtn.addEventListener('click', async () => {
+                if (!musicPlaying) {
+                    // Try to start audio context and load player only on the first click
+                    if (!isAudioContextInitialized) {
+                        audioStatus.textContent = "Loading music...";
+                        try {
+                            await Tone.start(); // Start audio context on user gesture
+                            isAudioContextInitialized = true;
+
+                            lofiPlayer = new Tone.Player({
+                                url: musicUrl,
+                                loop: true,
+                                autostart: false
+                            }).toDestination();
+
+                            // Set onload and onerror handlers for the player
+                            lofiPlayer.onload = () => {
+                                audioStatus.textContent = "Music ready!";
+                                // Only start playing if it's the first time or if it was stopped
+                                if (!musicPlaying) {
+                                    lofiPlayer.start();
+                                    onIcon.classList.remove('hidden');
+                                    offIcon.classList.add('hidden');
+                                    musicPlaying = true;
+                                    audioStatus.textContent = "Music playing.";
+                                }
+                            };
+
+                            lofiPlayer.onerror = (error) => {
+                                console.error("Error loading music via Tone.Player:", error);
+                                audioStatus.textContent = "Error loading music. Please check the URL or try again.";
+                                lofiPlayer = null;
+                                isAudioContextInitialized = false; // Allow re-initialization attempt
+                            };
+
+                        } catch (error) {
+                            console.error("Error initializing Tone.js or loading player:", error);
+                            audioStatus.textContent = "Error initializing audio. Please refresh the page.";
+                            lofiPlayer = null;
+                            isAudioContextInitialized = false;
+                        }
+                    } else {
+                        // If context is already initialized and player exists, just toggle play/pause
+                        if (lofiPlayer && lofiPlayer.loaded) { // Ensure player is loaded before starting
+                             if (lofiPlayer.state === 'stopped') {
+                                lofiPlayer.start();
+                                onIcon.classList.remove('hidden');
+                                offIcon.classList.add('hidden');
+                                musicPlaying = true;
+                                audioStatus.textContent = "Music playing.";
+                            } else {
+                                // If already playing, do nothing or toggle off (current logic is for starting)
+                                audioStatus.textContent = "Music is already playing.";
+                            }
+                        } else {
+                            audioStatus.textContent = "Music not loaded yet.";
+                        }
+                    }
+                } else {
+                    // If music is playing, stop it
+                    if (lofiPlayer) {
+                        lofiPlayer.stop();
+                    }
+                    onIcon.classList.add('hidden');
+                    offIcon.classList.remove('hidden');
+                    musicPlaying = false;
+                    audioStatus.textContent = "Music stopped.";
+                }
+            });
+        });
+    </script>
+</body>
+</html>
