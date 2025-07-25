@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Raruto Personal Hub</title>
+    <title>Maruto Personal Hub</title>
     
     <!-- Chosen Palette: Naruto Orange & Ninja Night -->
     <!-- Application Structure Plan: A single-screen, non-scrolling link hub with a Naruto anime aesthetic. The structure features a high-quality static image background and a central, semi-transparent card for the profile and links. -->
@@ -224,75 +224,55 @@
             let isAudioContextInitialized = false; // Flag to ensure Tone.js context is started only once
 
             // Updated music URL
-            const musicUrl = "https://drive.google.com/file/d/182D-TYmwxlULAklHLEjTMsNYynROXTBn/view?usp=sharing"; 
+            const musicUrl = "https://nnnu.ummn.nu/api/v1/download?sig=Z5XSmA%2F3P3pBvw6GFpCgLDnpxYp%2FwKHeWSN4RQKTwPjGKCZoYzW0QdCaob0CQfduXPDWkdUqG11mMdiAO64PlTG7ZQzQ3Kp4PEdUAOwmCZMF7SHBBziG8f6THqx8z63waykyBOVnpQ%2FrYZZnxGBMyEseIipqsDf2OSk38c5A5dfHMmU034imsArxqkFFmo%2BSzS5iWLxDgtxpGHBdUDDTefNZvY%2B3R99DGZs2XShn27cgT7JzQDqfXfZO%2B3xHpLKfIKKQlZ4DWW%2B954a3Vk4oOt%2Bk3tYCgDLHR8Zes65cltIwdP8349fWyYzXywwgZuUH68LQck%2BVuAAC4tFVXV%2FysQ%3D%3D&s=1&v=pXEGZ0V0rvw&f=mp3&_=0.9338297961352192"; 
 
             musicBtn.addEventListener('click', async () => {
-                if (!musicPlaying) {
-                    // Try to start audio context and load player only on the first click
-                    if (!isAudioContextInitialized) {
+                try {
+                    // Ensure audio context is started on user gesture
+                    await Tone.start();
+                    audioStatus.textContent = "Audio context started.";
+                    isAudioContextInitialized = true; // Mark context as started
+
+                    // If player is not yet initialized, create and load it
+                    if (lofiPlayer === null) {
                         audioStatus.textContent = "Loading music...";
-                        try {
-                            await Tone.start(); // Start audio context on user gesture
-                            isAudioContextInitialized = true;
+                        lofiPlayer = new Tone.Player({
+                            url: musicUrl,
+                            loop: true,
+                            autostart: false
+                        }).toDestination();
 
-                            lofiPlayer = new Tone.Player({
-                                url: musicUrl,
-                                loop: true,
-                                autostart: false
-                            }).toDestination();
-
-                            // Set onload and onerror handlers for the player
-                            lofiPlayer.onload = () => {
-                                audioStatus.textContent = "Music ready!";
-                                // Only start playing if it's the first time or if it was stopped
-                                if (!musicPlaying) {
-                                    lofiPlayer.start();
-                                    onIcon.classList.remove('hidden');
-                                    offIcon.classList.add('hidden');
-                                    musicPlaying = true;
-                                    audioStatus.textContent = "Music playing.";
-                                }
-                            };
-
-                            lofiPlayer.onerror = (error) => {
-                                console.error("Error loading music via Tone.Player:", error);
-                                audioStatus.textContent = "Error loading music. Please check the URL or try again.";
-                                lofiPlayer = null;
-                                isAudioContextInitialized = false; // Allow re-initialization attempt
-                            };
-
-                        } catch (error) {
-                            console.error("Error initializing Tone.js or loading player:", error);
-                            audioStatus.textContent = "Error initializing audio. Please refresh the page.";
-                            lofiPlayer = null;
-                            isAudioContextInitialized = false;
-                        }
-                    } else {
-                        // If context is already initialized and player exists, just toggle play/pause
-                        if (lofiPlayer && lofiPlayer.loaded) { // Ensure player is loaded before starting
-                             if (lofiPlayer.state === 'stopped') {
-                                lofiPlayer.start();
-                                onIcon.classList.remove('hidden');
-                                offIcon.classList.add('hidden');
-                                musicPlaying = true;
-                                audioStatus.textContent = "Music playing.";
-                            } else {
-                                // If already playing, do nothing or toggle off (current logic is for starting)
-                                audioStatus.textContent = "Music is already playing.";
-                            }
-                        } else {
-                            audioStatus.textContent = "Music not loaded yet.";
-                        }
+                        // Wait for the player to load the audio buffer
+                        await lofiPlayer.loaded; // This promise resolves when the buffer is loaded
+                        audioStatus.textContent = "Music ready!";
                     }
-                } else {
-                    // If music is playing, stop it
+
+                    // Now, toggle play/pause based on current state
+                    if (!musicPlaying) {
+                        lofiPlayer.start(); // This will resume if paused, or start from beginning if stopped/first play
+                        onIcon.classList.remove('hidden');
+                        offIcon.classList.add('hidden');
+                        musicPlaying = true;
+                        audioStatus.textContent = "Music playing.";
+                    } else {
+                        lofiPlayer.pause(); // Change from stop() to pause() to allow resuming
+                        onIcon.classList.add('hidden');
+                        offIcon.classList.remove('hidden');
+                        musicPlaying = false;
+                        audioStatus.textContent = "Music paused."; // Update status message
+                    }
+                } catch (error) {
+                    console.error("Error with music playback:", error);
+                    audioStatus.textContent = "Error with music. Check console.";
+                    // Reset state on critical error
+                    musicPlaying = false;
                     if (lofiPlayer) {
-                        lofiPlayer.stop();
+                        lofiPlayer.dispose(); // Clean up player
+                        lofiPlayer = null;
                     }
                     onIcon.classList.add('hidden');
                     offIcon.classList.remove('hidden');
-                    musicPlaying = false;
-                    audioStatus.textContent = "Music stopped.";
+                    isAudioContextInitialized = false; // Allow re-initialization attempt
                 }
             });
         });
