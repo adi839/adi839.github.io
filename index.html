@@ -430,11 +430,50 @@
             transition: transform 250ms var(--ease-out);
         }
         .avatar:active .avatar__face { transform: scale(0.95); }
-        .avatar__face img {
+        .avatar__letter,
+        .avatar__img { transition: opacity 400ms var(--ease-out); }
+        .avatar__img {
+            position: absolute;
+            inset: 0;
             width: 100%;
             height: 100%;
             border-radius: 50%;
             object-fit: cover;
+            opacity: 0;
+        }
+        .avatar__face.has-img .avatar__img { opacity: 1; }
+        .avatar__face.has-img .avatar__letter { opacity: 0; }
+
+        /* Discord status colours */
+        [data-status="online"]  { --st: #23a55a; }
+        [data-status="idle"]    { --st: #f0b232; }
+        [data-status="dnd"]     { --st: #f23f43; }
+        [data-status="offline"] { --st: #80848e; }
+
+        .avatar__status {
+            position: absolute;
+            right: 1px;
+            bottom: 1px;
+            z-index: 1;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 4px solid #150e26;
+            background: var(--st);
+            transition: background-color 300ms var(--ease-out);
+        }
+        .avatar__status[hidden] { display: none; }
+        .avatar__status[data-status="online"]::after {
+            content: "";
+            position: absolute;
+            inset: -4px;
+            border-radius: 50%;
+            border: 2px solid var(--st);
+            animation: ping 2.4s var(--ease-out) infinite;
+        }
+        @keyframes ping {
+            from { transform: scale(0.8); opacity: 0.8; }
+            to   { transform: scale(1.9); opacity: 0; }
         }
 
         .name {
@@ -813,9 +852,10 @@
                 color: var(--ink);
                 transform: translate(2px, -2px);
             }
+            .presence__profile:hover,
             .side-btn:hover,
             .corner:hover {
-                background: var(--surface-hover);
+                background-color: var(--surface-hover);
                 border-color: var(--line-strong);
                 color: var(--ink);
             }
@@ -832,6 +872,195 @@
         .avatar:focus-visible {
             outline: 2px solid var(--orange);
             outline-offset: 3px;
+        }
+
+        /* ---------- Discord presence ---------- */
+        .chip[hidden] { display: none; }
+        .status-dot {
+            flex: none;
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--st);
+            box-shadow: 0 0 8px var(--st);
+        }
+
+        .presence {
+            margin-top: 20px;
+            padding: 12px 12px 12px 14px;
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            background: var(--surface);
+            text-align: left;
+        }
+        .presence[hidden] { display: none; }
+        .presence.is-in { animation: rise 500ms var(--ease-out) backwards; }
+        .presence:not([hidden]) + .player { margin-top: 12px; }
+
+        .presence__head {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+        }
+        .presence__logo { flex: none; width: 18px; height: 18px; color: #8c95ff; }
+        .presence__who {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+            flex: 1;
+            min-width: 0;
+            white-space: nowrap;
+        }
+        .presence__name {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: 0.9375rem;
+            font-weight: 600;
+        }
+        .presence__handle {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: 0.8125rem;
+            color: var(--ink-faint);
+        }
+        .presence__profile {
+            flex: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            border: 1px solid var(--line);
+            color: var(--ink-muted);
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: background-color 200ms var(--ease-out), border-color 200ms var(--ease-out), color 200ms var(--ease-out), transform 160ms var(--ease-out);
+        }
+        .presence__profile:active { transform: scale(0.95); }
+        .presence__profile svg { width: 12px; height: 12px; }
+
+        .presence__custom,
+        .presence__idle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin: 10px 0 0;
+            font-size: 0.8125rem;
+            line-height: 1.4;
+            color: var(--ink-muted);
+            overflow-wrap: anywhere;
+        }
+        .presence__custom {
+            padding: 7px 10px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.045);
+        }
+        .presence__custom img { flex: none; width: 18px; height: 18px; object-fit: contain; }
+        .presence__idle { color: var(--ink-faint); }
+        .presence__custom[hidden],
+        .presence__idle[hidden] { display: none; }
+
+        .acts { display: grid; gap: 10px; margin-top: 10px; }
+        .acts:empty { display: none; }
+        .act {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding-top: 10px;
+            border-top: 1px solid var(--line);
+        }
+        .act.is-new { animation: rise 450ms var(--ease-out) backwards; }
+        .act__art { position: relative; flex: none; width: 56px; height: 56px; }
+        .act__img,
+        .act__fallback {
+            width: 100%;
+            height: 100%;
+            border-radius: 12px;
+            object-fit: cover;
+            background: rgba(255, 255, 255, 0.06);
+        }
+        .act__fallback { display: grid; place-items: center; color: var(--ink-faint); }
+        .act__fallback svg { width: 26px; height: 26px; }
+        .act__small {
+            position: absolute;
+            right: -5px;
+            bottom: -5px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 3px solid #160f27;
+            background: #160f27;
+            object-fit: cover;
+        }
+        .act__body {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-width: 0;
+            line-height: 1.35;
+        }
+        .act__label {
+            font-size: 0.6875rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--ink-faint);
+        }
+        .act--spotify .act__label { color: #1ed760; }
+        .act__title,
+        .act__line {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .act__title {
+            color: var(--ink);
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-decoration: none;
+        }
+        a.act__title:hover { text-decoration: underline; }
+        .act__line { font-size: 0.8125rem; color: var(--ink-muted); }
+        .act__time {
+            font-size: 0.75rem;
+            color: var(--ink-faint);
+            font-variant-numeric: tabular-nums;
+        }
+        .bar {
+            height: 4px;
+            margin-top: 7px;
+            border-radius: 2px;
+            background: rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+        }
+        .bar__fill {
+            height: 100%;
+            border-radius: inherit;
+            background: #1ed760;
+            transform-origin: left;
+            transform: scaleX(var(--p, 0));
+            transition: transform 1s linear;
+        }
+        .bar__times {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 4px;
+            font-size: 0.6875rem;
+            color: var(--ink-faint);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .live-dot {
+            display: inline-block;
+            width: 7px;
+            height: 7px;
+            margin-right: 6px;
+            border-radius: 50%;
+            background: #23a55a;
+            box-shadow: 0 0 6px #23a55a;
+            vertical-align: 1px;
         }
 
         /* ---------- Toast ---------- */
@@ -901,6 +1130,9 @@
             @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
             .link:hover { transform: none; }
             .avatar:hover .avatar__face { transform: none; }
+            .avatar__status::after { animation: none !important; opacity: 0; }
+            .presence.is-in,
+            .act.is-new { animation-name: fade; }
         }
     </style>
 </head>
@@ -938,14 +1170,19 @@
 
             <button id="avatar" class="avatar reveal" style="--i: 0" type="button" aria-label="Rasengan! (tap for a quote)">
                 <span class="avatar__ring" aria-hidden="true"></span>
-                <!-- To use a photo, replace the letter below with: <img src="avatar.jpg" alt=""> -->
-                <span class="avatar__face" aria-hidden="true">G</span>
+                <!-- Your Discord avatar replaces the letter automatically once DISCORD_USER_ID is set. -->
+                <span class="avatar__face" aria-hidden="true">
+                    <span class="avatar__letter">G</span>
+                    <img id="avatar-img" class="avatar__img" alt="">
+                </span>
+                <span id="avatar-status" class="avatar__status" hidden></span>
             </button>
 
             <h1 id="name" class="name reveal" style="--i: 1">Gabytzu</h1>
 
             <div class="chips reveal" style="--i: 2">
                 <span class="chip"><span class="chip__dot" aria-hidden="true"></span>14 years old</span>
+                <span id="dc-chip" class="chip" data-status="offline" hidden><span class="status-dot" aria-hidden="true"></span><span id="dc-chip-text">Offline</span></span>
             </div>
 
             <p class="roles reveal" style="--i: 3">
@@ -954,6 +1191,23 @@
                 <span id="typed" aria-hidden="true">IT Developer</span>
                 <span class="caret" aria-hidden="true"></span>
             </p>
+
+            <section id="presence" class="presence" aria-label="Discord status" hidden>
+                <div class="presence__head">
+                    <svg class="presence__logo" aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03ZM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418Zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418Z"/></svg>
+                    <span class="presence__who">
+                        <span id="dc-name" class="presence__name"></span>
+                        <span id="dc-handle" class="presence__handle"></span>
+                    </span>
+                    <a id="dc-profile" class="presence__profile" href="https://discord.com/" target="_blank" rel="noopener noreferrer">
+                        Profile
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg>
+                    </a>
+                </div>
+                <p id="dc-custom" class="presence__custom" hidden></p>
+                <p id="dc-idle" class="presence__idle" hidden></p>
+                <div id="dc-acts" class="acts"></div>
+            </section>
 
             <button id="player" class="player spot reveal" style="--i: 4" type="button" data-state="idle" aria-pressed="false" aria-label="Play lofi music" aria-keyshortcuts="M">
                 <span class="player__btn" aria-hidden="true">
@@ -988,8 +1242,8 @@
                                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03ZM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418Zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418Z"/></svg>
                             </span>
                             <span class="link__text">
-                                <span class="link__title">Discord</span>
-                                <span class="link__sub">Join the server</span>
+                                <span id="dc-server-name" class="link__title">Discord</span>
+                                <span id="dc-server-sub" class="link__sub">Join the server</span>
                             </span>
                             <svg class="link__arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg>
                         </a>
@@ -1296,6 +1550,281 @@
                     el.style.setProperty('--my', `${e.clientY - r.top}px`);
                 });
             }
+
+            // ---------- Discord: live profile (Lanyard) + server stats ----------
+            // To show your live Discord status, activity and Spotify:
+            //   1. Join https://discord.gg/lanyard with your Discord account.
+            //   2. Discord → Settings → Advanced → turn on Developer Mode,
+            //      then right-click your name → Copy User ID, and paste it here.
+            const DISCORD_USER_ID = '';
+            const DISCORD_INVITE = 'tUcEZ6kp5a';
+
+            const SNOWFLAKE = /^\d{15,21}$/;
+            const STATUS_TEXT = { online: 'Online', idle: 'Idle', dnd: 'Do not disturb', offline: 'Offline' };
+            const IDLE_LINE = {
+                online: 'Online, come say hi 👋',
+                idle: 'Away for a bit 🌙',
+                dnd: 'Busy right now ⛔',
+                offline: 'Offline right now 💤',
+            };
+            const VERBS = { 0: 'Playing', 1: 'Streaming', 2: 'Listening to', 3: 'Watching', 5: 'Competing in' };
+            const GAMEPAD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 11h4M8 9v4M15 12h.01M18 10h.01"/><path d="M17.32 5H6.68a4 4 0 0 0-3.98 3.59l-.9 8.1A2.4 2.4 0 0 0 4.18 19.4c.83 0 1.6-.43 2.03-1.14L7.5 16h9l1.29 2.26c.43.71 1.2 1.14 2.03 1.14a2.4 2.4 0 0 0 2.38-2.71l-.9-8.1A4 4 0 0 0 17.32 5Z"/></svg>';
+
+            const presenceEl = $('#presence');
+            const heroFace = $('.avatar__face');
+            const heroImg = $('#avatar-img');
+            const heroStatus = $('#avatar-status');
+            const statusChip = $('#dc-chip');
+
+            const el = (tag, className, text) => {
+                const node = document.createElement(tag);
+                if (className) node.className = className;
+                if (text != null) node.textContent = text;
+                return node;
+            };
+            const image = (src, alt, className, onFail) => {
+                const img = el('img', className);
+                img.alt = alt || '';
+                img.decoding = 'async';
+                img.referrerPolicy = 'no-referrer';
+                img.onerror = onFail || (() => img.remove());
+                img.src = src;
+                return img;
+            };
+            const fallbackArt = () => {
+                const box = el('div', 'act__fallback');
+                box.innerHTML = GAMEPAD;
+                return box;
+            };
+            const clock = (ms) => {
+                const total = Math.max(0, Math.floor(ms / 1000));
+                const hours = Math.floor(total / 3600);
+                const mins = Math.floor((total % 3600) / 60);
+                const secs = String(total % 60).padStart(2, '0');
+                return hours ? `${hours}:${String(mins).padStart(2, '0')}:${secs}` : `${mins}:${secs}`;
+            };
+
+            const avatarUrl = (user) => /^(a_)?[0-9a-f]{20,40}$/.test(user.avatar || '')
+                ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.${user.avatar.startsWith('a_') ? 'gif' : 'png'}?size=256`
+                : `https://cdn.discordapp.com/embed/avatars/${Number((BigInt(user.id) >> 22n) % 6n)}.png`;
+
+            // Activity image keys come in a few shapes; see Discord's Rich Presence docs.
+            const assetUrl = (appId, key) => {
+                if (!key) return null;
+                if (key.startsWith('mp:external/')) return `https://media.discordapp.net/external/${key.slice(12)}`;
+                if (key.startsWith('mp:')) return `https://media.discordapp.net/${key.slice(3)}`;
+                if (key.startsWith('spotify:')) return `https://i.scdn.co/image/${key.slice(8)}`;
+                return appId ? `https://cdn.discordapp.com/app-assets/${appId}/${key}.png?size=160` : null;
+            };
+
+            const activityRow = (activity) => {
+                const row = el('div', 'act');
+                const art = el('div', 'act__art');
+                const appId = SNOWFLAKE.test(activity.application_id || '') ? activity.application_id : null;
+                const assets = activity.assets || {};
+                const large = assetUrl(appId, assets.large_image);
+                art.append(large ? image(large, assets.large_text || activity.name, 'act__img', function () { this.replaceWith(fallbackArt()); }) : fallbackArt());
+                const small = assetUrl(appId, assets.small_image);
+                if (small) art.append(image(small, assets.small_text, 'act__small'));
+
+                const body = el('div', 'act__body');
+                body.append(el('span', 'act__label', VERBS[activity.type] || 'Activity'), el('span', 'act__title', activity.name));
+                if (activity.details) body.append(el('span', 'act__line', activity.details));
+                if (activity.state) body.append(el('span', 'act__line', activity.state));
+                const { start, end } = activity.timestamps || {};
+                if (start || end) {
+                    const time = el('span', 'act__time');
+                    if (start) time.dataset.start = start;
+                    else time.dataset.end = end;
+                    body.append(time);
+                }
+                row.append(art, body);
+                return row;
+            };
+
+            const spotifyRow = (spotify) => {
+                const row = el('div', 'act act--spotify');
+                const art = el('div', 'act__art');
+                const cover = /^https:\/\/i\.scdn\.co\//.test(spotify.album_art_url || '') ? spotify.album_art_url : null;
+                art.append(cover ? image(cover, spotify.album, 'act__img', function () { this.replaceWith(fallbackArt()); }) : fallbackArt());
+
+                const body = el('div', 'act__body');
+                const title = el(spotify.track_id ? 'a' : 'span', 'act__title', spotify.song);
+                if (spotify.track_id) {
+                    title.href = `https://open.spotify.com/track/${encodeURIComponent(spotify.track_id)}`;
+                    title.target = '_blank';
+                    title.rel = 'noopener noreferrer';
+                }
+                const artists = (spotify.artist || '').split(';').map((name) => name.trim()).join(', ');
+                body.append(el('span', 'act__label', 'Listening to Spotify'), title, el('span', 'act__line', `by ${artists}`));
+
+                const { start, end } = spotify.timestamps || {};
+                if (start && end) {
+                    const bar = el('div', 'bar');
+                    bar.dataset.start = start;
+                    bar.dataset.end = end;
+                    bar.append(el('div', 'bar__fill'));
+                    const times = el('div', 'bar__times');
+                    times.append(el('span', null, '0:00'), el('span', null, clock(end - start)));
+                    body.append(bar, times);
+                }
+                row.append(art, body);
+                return row;
+            };
+
+            const tickPresence = () => {
+                const now = Date.now();
+                presenceEl.querySelectorAll('.act__time').forEach((time) => {
+                    time.textContent = time.dataset.start
+                        ? `${clock(now - Number(time.dataset.start))} elapsed`
+                        : `${clock(Number(time.dataset.end) - now)} left`;
+                });
+                presenceEl.querySelectorAll('.bar').forEach((bar) => {
+                    const start = Number(bar.dataset.start);
+                    const end = Number(bar.dataset.end);
+                    const progress = Math.min(1, Math.max(0, (now - start) / (end - start)));
+                    bar.firstChild.style.setProperty('--p', progress.toFixed(4));
+                    bar.nextSibling.firstChild.textContent = clock(Math.min(now, end) - start);
+                });
+            };
+            setInterval(() => { if (!presenceEl.hidden && !document.hidden) tickPresence(); }, 1000);
+
+            let lastActivityKey = '';
+            const renderPresence = (data) => {
+                const user = data && data.discord_user;
+                if (!user || !SNOWFLAKE.test(user.id || '')) return;
+                const status = STATUS_TEXT[data.discord_status] ? data.discord_status : 'offline';
+                const activities = Array.isArray(data.activities) ? data.activities : [];
+
+                // Hero avatar + status dot
+                const src = avatarUrl(user);
+                if (heroImg.dataset.src !== src) {
+                    heroImg.dataset.src = src;
+                    heroImg.onload = () => heroFace.classList.add('has-img');
+                    heroImg.onerror = () => heroFace.classList.remove('has-img');
+                    heroImg.src = src;
+                }
+                heroStatus.dataset.status = status;
+                heroStatus.title = STATUS_TEXT[status];
+                heroStatus.hidden = false;
+
+                // Status chip
+                const onMobileOnly = data.active_on_discord_mobile && !data.active_on_discord_desktop && !data.active_on_discord_web;
+                statusChip.dataset.status = status;
+                $('#dc-chip-text').textContent = STATUS_TEXT[status] + (status !== 'offline' && onMobileOnly ? ' on mobile' : '');
+                statusChip.hidden = false;
+
+                // Header
+                $('#dc-name').textContent = user.global_name || user.display_name || user.username;
+                $('#dc-handle').textContent = `@${user.username}`;
+                $('#dc-profile').href = `https://discord.com/users/${user.id}`;
+
+                // Custom status
+                const custom = activities.find((a) => a.type === 4);
+                const customEl = $('#dc-custom');
+                customEl.replaceChildren();
+                if (custom && (custom.state || (custom.emoji && custom.emoji.name))) {
+                    const emoji = custom.emoji || {};
+                    if (SNOWFLAKE.test(emoji.id || '')) {
+                        customEl.append(image(`https://cdn.discordapp.com/emojis/${emoji.id}.${emoji.animated ? 'gif' : 'png'}?size=48`, emoji.name));
+                    } else if (emoji.name) {
+                        customEl.append(el('span', null, emoji.name));
+                    }
+                    if (custom.state) customEl.append(el('span', null, custom.state));
+                }
+                customEl.hidden = !customEl.hasChildNodes();
+
+                // Activities: Spotify first, then games/apps (max 3 rows)
+                const rows = [];
+                if (data.listening_to_spotify && data.spotify) rows.push(spotifyRow(data.spotify));
+                for (const activity of activities) {
+                    if (rows.length >= 3) break;
+                    if (activity.type === 4 || (data.listening_to_spotify && activity.id === 'spotify:1')) continue;
+                    rows.push(activityRow(activity));
+                }
+                const key = JSON.stringify([
+                    data.listening_to_spotify && data.spotify && data.spotify.track_id,
+                    activities.filter((a) => a.type !== 4).map((a) => [a.name, a.details, a.state]),
+                ]);
+                if (key !== lastActivityKey) rows.forEach((row) => row.classList.add('is-new'));
+                lastActivityKey = key;
+                $('#dc-acts').replaceChildren(...rows);
+
+                const idle = $('#dc-idle');
+                idle.textContent = IDLE_LINE[status];
+                idle.hidden = rows.length > 0 || !customEl.hidden;
+
+                if (presenceEl.hidden) {
+                    presenceEl.hidden = false;
+                    presenceEl.classList.add('is-in');
+                }
+                tickPresence();
+            };
+
+            // Lanyard: one REST call for a fast first paint, then a WebSocket for live updates.
+            const startLanyard = () => {
+                if (!SNOWFLAKE.test(DISCORD_USER_ID)) return;
+                let socket;
+                let heartbeat;
+                let attempts = 0;
+
+                const connect = () => {
+                    if (attempts > 8) return;
+                    socket = new WebSocket('wss://api.lanyard.rest/socket');
+                    socket.addEventListener('message', (event) => {
+                        let msg;
+                        try { msg = JSON.parse(event.data); } catch { return; }
+                        if (msg.op === 1) {
+                            clearInterval(heartbeat);
+                            heartbeat = setInterval(() => {
+                                if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ op: 3 }));
+                            }, (msg.d && msg.d.heartbeat_interval) || 30000);
+                            socket.send(JSON.stringify({ op: 2, d: { subscribe_to_id: DISCORD_USER_ID } }));
+                        } else if (msg.op === 0 && (msg.t === 'INIT_STATE' || msg.t === 'PRESENCE_UPDATE')) {
+                            attempts = 0;
+                            renderPresence(msg.d);
+                        }
+                    });
+                    socket.addEventListener('close', () => {
+                        clearInterval(heartbeat);
+                        setTimeout(connect, Math.min(30000, 1000 * 2 ** attempts++));
+                    });
+                };
+
+                fetch(`https://api.lanyard.rest/v1/users/${DISCORD_USER_ID}`)
+                    .then((res) => res.json())
+                    .then((json) => {
+                        if (json.success) {
+                            renderPresence(json.data);
+                            connect();
+                        } else {
+                            console.warn('Lanyard:', (json.error && json.error.message) || json.error, '(join https://discord.gg/lanyard)');
+                        }
+                    })
+                    .catch(connect);
+            };
+
+            // Server name + live member counts on the Discord link.
+            const loadServerStats = () => {
+                if (!/^[\w-]+$/.test(DISCORD_INVITE)) return;
+                fetch(`https://discord.com/api/v10/invites/${DISCORD_INVITE}?with_counts=true`)
+                    .then((res) => (res.ok ? res.json() : Promise.reject(res.status)))
+                    .then((invite) => {
+                        const compact = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 });
+                        if (invite.guild && invite.guild.name) $('#dc-server-name').textContent = invite.guild.name;
+                        if (typeof invite.approximate_presence_count === 'number') {
+                            const sub = $('#dc-server-sub');
+                            sub.replaceChildren(
+                                el('span', 'live-dot'),
+                                `${compact.format(invite.approximate_presence_count)} online · ${compact.format(invite.approximate_member_count)} members`,
+                            );
+                        }
+                    })
+                    .catch(() => { /* keep the static text */ });
+            };
+
+            startLanyard();
+            loadServerStats();
 
             // ---------- Card tilt + background parallax ----------
             if (finePointer && !reduceMotion) {
