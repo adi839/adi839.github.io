@@ -2,280 +2,1735 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yaruto Personal Hub</title>
-    
-    <!-- Chosen Palette: Naruto Orange & Ninja Night -->
-    <!-- Application Structure Plan: A single-screen, non-scrolling link hub with a Naruto anime aesthetic. The structure features a high-quality static image background and a central, semi-transparent card for the profile and links. -->
-    <!-- Visualization & Content Choices: Goal: Naruto anime aesthetic -> Method: A high-quality background image of Naruto overlooking Konoha. Goal: Thematic UI -> Method: A color palette based on Naruto's iconic orange, a clean card layout, and a dedicated on/off button for lofi music. Goal: Interactive Links -> Method: A vertical list of buttons with icons and text, featuring a subtle glow effect. Justification: This model fulfills the user's specific request for a Naruto-themed background while maintaining the functional structure. -->
-    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Gabytzu · Personal Hub</title>
+    <meta name="description" content="Gabytzu — IT developer, gamer and problem solver. NexusTV, Discord and YouTube, all in one place.">
+    <meta name="theme-color" content="#05030a">
+    <meta name="color-scheme" content="dark">
+    <link rel="canonical" href="https://adi839.github.io/">
 
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://adi839.github.io/">
+    <meta property="og:title" content="Gabytzu · Personal Hub">
+    <meta property="og:description" content="IT developer, gamer and problem solver. All my links in one place.">
+    <meta name="twitter:card" content="summary">
+
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-    <!-- Firebase SDK - Added for Firestore -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, onSnapshot, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // Global variables for Firebase, defined by the Canvas environment
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
-        let app;
-        let db;
-        let auth;
-        let userId;
-
-        document.addEventListener('DOMContentLoaded', async () => {
-            try {
-                app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-
-                // Anonymous or custom token authentication
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                } else {
-                    await signInAnonymously(auth);
-                }
-                userId = auth.currentUser?.uid || crypto.randomUUID();
-
-                // Initialize and update visitor counter
-                const counterRef = doc(db, `artifacts/${appId}/public/data/visitor_counter`, 'total_visits');
-
-                // Increment counter on each page load
-                await setDoc(counterRef, { count: increment(1) }, { merge: true });
-
-                // Listen for real-time counter updates
-                onSnapshot(counterRef, (docSnap) => {
-                    if (docSnap.exists()) {
-                        const count = docSnap.data().count;
-                        document.getElementById('visitor-count').textContent = count;
-                    } else {
-                        document.getElementById('visitor-count').textContent = '0';
-                    }
-                });
-
-            } catch (error) {
-                console.error("Error initializing Firebase or visitor counter:", error);
-                // Display a user-friendly error message, do not use alert()
-                const errorMessageDiv = document.createElement('div');
-                errorMessageDiv.className = 'text-red-500 mt-4';
-                errorMessageDiv.textContent = 'An error occurred while loading the visitor counter. Please try again later.';
-                document.querySelector('.content-card').appendChild(errorMessageDiv);
-            }
-        });
-    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Unbounded:wght@600;800&display=swap" rel="stylesheet">
 
     <style>
+        @property --a { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+
+        /* ---------- Tokens: neon night ---------- */
+        :root {
+            --bg: #05030a;
+            --panel: #0d0919;
+            --panel-2: #140e26;
+
+            --cyan: #22d3ee;
+            --violet: #a78bfa;
+            --purple: #8b5cf6;
+            --pink: #f472b6;
+            --neon: linear-gradient(90deg, var(--cyan), var(--violet), var(--pink), var(--cyan));
+
+            --ink: #f5f3ff;
+            --ink-muted: rgba(245, 243, 255, 0.7);
+            --ink-faint: rgba(245, 243, 255, 0.45);
+            --line: rgba(255, 255, 255, 0.08);
+
+            --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+
+            --display: "Unbounded", ui-sans-serif, system-ui, sans-serif;
+            --font: "Space Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+            color-scheme: dark;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; }
+        html { -webkit-text-size-adjust: 100%; }
+
         body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(-45deg, #0a0514, #2c2143, #ff8c00, #e85d04);
-            background-size: 400% 400%;
-            animation: gradientBG 15s ease infinite;
+            margin: 0;
+            min-height: 100vh;
+            min-height: 100dvh;
+            font-family: var(--font);
+            color: var(--ink);
+            background: var(--bg);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            -webkit-tap-highlight-color: transparent;
+            overflow-x: hidden;
+        }
+        button { font: inherit; color: inherit; }
+
+        .sr-only {
+            position: absolute;
+            width: 1px; height: 1px;
+            padding: 0; margin: -1px;
             overflow: hidden;
-        }
-        @keyframes gradientBG {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-        .content-card {
-            background: rgba(10, 5, 20, 0.7);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(249, 115, 22, 0.2); /* orange-500 */
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3); /* More pronounced shadow for the card */
-        }
-        
-        /* Typing animation cursor */
-        #animated-subtitle::after {
-            content: '_';
-            animation: blink 1s infinite;
-            color: #f97316; /* orange-500 */
-        }
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0; }
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
         }
 
-        /* Style for link buttons */
-        .link-button {
-            transition: all 0.3s ease-in-out;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        /* ---------- Living background ---------- */
+        .scene {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            overflow: hidden;
+            pointer-events: none;
         }
-        .link-button:hover {
-            transform: translateY(-3px); /* Subtle lift effect */
-            box-shadow: 0 8px 20px rgba(249, 115, 22, 0.3); /* Orange-tinted shadow */
+        .blob {
+            position: absolute;
+            width: 55vmax;
+            height: 55vmax;
+            border-radius: 50%;
+            background: radial-gradient(closest-side, var(--c), transparent);
+            opacity: 0.45;
+            animation: drift 22s ease-in-out infinite alternate;
+        }
+        .blob--1 { top: -20vmax; left: -15vmax; --c: var(--purple); }
+        .blob--2 { top: 10vmax; right: -25vmax; --c: #0e7490; animation-duration: 27s; animation-delay: -8s; }
+        .blob--3 { bottom: -30vmax; left: 10vmax; --c: #be185d; opacity: 0.35; animation-duration: 31s; animation-delay: -15s; }
+        @keyframes drift {
+            0%   { transform: translate(0, 0) scale(1); }
+            50%  { transform: translate(8vmax, 6vmax) scale(1.15); }
+            100% { transform: translate(-6vmax, 10vmax) scale(0.9); }
         }
 
-        /* Style for music button */
-        #music-btn {
-            background-color: rgba(249, 115, 22, 0.1); /* Transparent orange */
-            border-radius: 50%; /* Circular shape */
-            padding: 10px;
-            display: inline-flex;
+        .horizon {
+            position: absolute;
+            left: 50%;
+            bottom: 34vh;
+            width: 120vw;
+            height: 30vh;
+            transform: translateX(-50%);
+            background: radial-gradient(closest-side, rgba(244, 114, 182, 0.45), rgba(139, 92, 246, 0.15) 50%, transparent);
+            animation: breathe 6s ease-in-out infinite alternate;
+        }
+        @keyframes breathe { from { opacity: 0.6; } to { opacity: 1; } }
+
+        .grid {
+            position: absolute;
+            left: -50%;
+            right: -50%;
+            bottom: 0;
+            height: 42vh;
+            background-image:
+                linear-gradient(rgba(167, 139, 250, 0.55) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(34, 211, 238, 0.4) 1px, transparent 1px);
+            background-size: 64px 64px;
+            transform: perspective(320px) rotateX(62deg);
+            transform-origin: 50% 100%;
+            -webkit-mask-image: linear-gradient(to top, #000 10%, transparent 85%);
+                    mask-image: linear-gradient(to top, #000 10%, transparent 85%);
+            animation: grid-run 1.4s linear infinite;
+        }
+        @keyframes grid-run { to { background-position: 0 64px, 0 0; } }
+
+        .scan {
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 3px);
+            animation: scan 8s linear infinite;
+        }
+        @keyframes scan { to { background-position: 0 120px; } }
+
+        #bg {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .cursor {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            width: 420px;
+            height: 420px;
+            margin: -210px 0 0 -210px;
+            border-radius: 50%;
+            background: radial-gradient(closest-side, rgba(139, 92, 246, 0.22), rgba(34, 211, 238, 0.08) 55%, transparent);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 400ms var(--ease-out);
+            will-change: transform;
+        }
+        .cursor.is-on { opacity: 1; }
+
+        /* ---------- Layout ---------- */
+        .page {
+            position: relative;
+            z-index: 2;
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            transition: all 0.3s ease-in-out;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            gap: 22px;
+            padding:
+                max(36px, env(safe-area-inset-top))
+                max(16px, env(safe-area-inset-right))
+                max(28px, env(safe-area-inset-bottom))
+                max(16px, env(safe-area-inset-left));
         }
-        #music-btn:hover {
-            background-color: rgba(249, 115, 22, 0.3);
-            transform: scale(1.1); /* Subtle enlarge on hover */
+        .hub {
+            position: relative;
+            width: 100%;
+            max-width: 440px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .reveal {
+            animation: rise 800ms var(--ease-out) backwards;
+            animation-delay: calc(100ms + var(--i, 0) * 80ms);
+        }
+        @keyframes rise {
+            from { opacity: 0; transform: translateY(24px) scale(0.96); filter: blur(6px); }
+        }
+
+        /* Everything floats a little, each on its own beat */
+        .float {
+            animation: bob 5s ease-in-out infinite;
+            animation-delay: var(--d, 0s);
+        }
+        /* Elements that both enter and float/spin need the animations combined */
+        .reveal.float {
+            animation:
+                rise 800ms var(--ease-out) calc(100ms + var(--i, 0) * 80ms) backwards,
+                bob 5s ease-in-out var(--d, 0s) infinite;
+        }
+        [hidden] { display: none !important; }
+        @keyframes bob {
+            0%, 100% { translate: 0 0; }
+            50%      { translate: 0 -4px; }
+        }
+
+        /* ---------- Neon panels ---------- */
+        .neon {
+            position: relative;
+            border: 1.5px solid transparent;
+            border-radius: 20px;
+            background:
+                linear-gradient(160deg, var(--panel-2), var(--panel)) padding-box,
+                conic-gradient(from var(--a), var(--cyan), var(--purple), var(--pink), rgba(255, 255, 255, 0.05) 40%, rgba(255, 255, 255, 0.05) 60%, var(--cyan)) border-box;
+            box-shadow: 0 10px 40px -18px rgba(139, 92, 246, 0.6);
+            animation: border-spin 6s linear infinite;
+            animation-delay: var(--d, 0s);
+            overflow: hidden;
+            isolation: isolate;
+        }
+        @keyframes border-spin { to { --a: 360deg; } }
+        .neon.reveal {
+            animation:
+                rise 800ms var(--ease-out) calc(100ms + var(--i, 0) * 80ms) backwards,
+                border-spin 6s linear var(--d, 0s) infinite;
+        }
+        /* A light sweep that keeps passing over every panel */
+        .neon::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            z-index: -1;
+            background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.07) 50%, transparent 65%);
+            background-size: 300% 100%;
+            animation: shine 5s var(--ease-out) infinite;
+            animation-delay: var(--d, 0s);
+            pointer-events: none;
+        }
+        @keyframes shine {
+            0%   { background-position: 130% 0; }
+            40%, 100% { background-position: -30% 0; }
+        }
+
+        /* ---------- Hero ---------- */
+        .hero {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding-bottom: 6px;
+        }
+
+        .share {
+            position: absolute;
+            top: 0;
+            right: 0;
+            display: grid;
+            place-items: center;
+            width: 42px;
+            height: 42px;
+            padding: 0;
+            border-radius: 14px;
+            color: var(--ink-muted);
+            cursor: pointer;
+            touch-action: manipulation;
+            transition: color 200ms var(--ease-out), transform 160ms var(--ease-out);
+        }
+        .share svg { width: 18px; height: 18px; }
+        .share:active { transform: scale(0.9); }
+
+        .avatar {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            margin: 6px 0 20px;
+            padding: 0;
+            border: 0;
+            border-radius: 50%;
+            background: none;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+        .avatar__halo {
+            position: absolute;
+            inset: -18px;
+            border-radius: 50%;
+            background: radial-gradient(closest-side, rgba(139, 92, 246, 0.55), transparent);
+            animation: pulse 2.6s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(0.9); opacity: 0.6; }
+            50%      { transform: scale(1.1); opacity: 1; }
+        }
+        .avatar__ring {
+            position: absolute;
+            inset: -6px;
+            border-radius: 50%;
+            background: conic-gradient(var(--cyan), var(--purple), var(--pink), transparent 70%, var(--cyan));
+            -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+                    mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+            animation: spin 3s linear infinite;
+        }
+        .avatar__ring--2 {
+            inset: -13px;
+            opacity: 0.5;
+            animation-duration: 7s;
+            animation-direction: reverse;
+        }
+        .orbit {
+            position: absolute;
+            inset: -20px;
+            border-radius: 50%;
+            animation: spin 5s linear infinite;
+        }
+        .orbit::before {
+            content: "";
+            position: absolute;
+            top: -3px;
+            left: 50%;
+            width: 8px;
+            height: 8px;
+            margin-left: -4px;
+            border-radius: 50%;
+            background: var(--cyan);
+            box-shadow: 0 0 12px 3px var(--cyan);
+        }
+        .orbit--2 { inset: -28px; animation-duration: 8s; animation-direction: reverse; }
+        .orbit--2::before { background: var(--pink); box-shadow: 0 0 12px 3px var(--pink); }
+        .orbit--3 { inset: -10px; animation-duration: 3.5s; }
+        .orbit--3::before { width: 6px; height: 6px; margin-left: -3px; background: var(--violet); box-shadow: 0 0 10px 2px var(--violet); }
+        @keyframes spin { to { transform: rotate(1turn); } }
+
+        .avatar__face {
+            position: absolute;
+            inset: 2px;
+            display: grid;
+            place-items: center;
+            overflow: hidden;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #1b1236, #0b0716);
+            box-shadow: inset 0 0 30px rgba(139, 92, 246, 0.5);
+            font-family: var(--display);
+            font-size: 50px;
+            font-weight: 800;
+            user-select: none;
+            transition: transform 250ms var(--ease-out);
+        }
+        .avatar__letter {
+            background: var(--neon);
+            background-size: 300% 100%;
+            -webkit-background-clip: text;
+                    background-clip: text;
+            color: transparent;
+            animation: slide 4s linear infinite;
+            transition: opacity 400ms var(--ease-out);
+        }
+        .avatar__img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0;
+            transition: opacity 400ms var(--ease-out);
+        }
+        .avatar__face.has-img .avatar__img { opacity: 1; }
+        .avatar__face.has-img .avatar__letter { opacity: 0; }
+        .avatar:active .avatar__face { transform: scale(0.94); }
+
+        [data-status="online"]  { --st: #23a55a; }
+        [data-status="idle"]    { --st: #f0b232; }
+        [data-status="dnd"]     { --st: #f23f43; }
+        [data-status="offline"] { --st: #80848e; }
+
+        .avatar__status {
+            position: absolute;
+            right: 4px;
+            bottom: 4px;
+            z-index: 1;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 4px solid var(--bg);
+            background: var(--st);
+        }
+        .avatar__status[hidden] { display: none; }
+        .avatar__status::after {
+            content: "";
+            position: absolute;
+            inset: -4px;
+            border-radius: 50%;
+            border: 2px solid var(--st);
+            animation: ping 2s var(--ease-out) infinite;
+        }
+        @keyframes ping {
+            from { transform: scale(0.8); opacity: 0.9; }
+            to   { transform: scale(2); opacity: 0; }
+        }
+
+        @keyframes slide { to { background-position: 300% 0; } }
+
+        .name {
+            position: relative;
+            margin: 0;
+            font-family: var(--display);
+            font-size: clamp(2.4rem, 11vw, 3.4rem);
+            font-weight: 800;
+            line-height: 1;
+            letter-spacing: -0.03em;
+            background: var(--neon);
+            background-size: 300% 100%;
+            -webkit-background-clip: text;
+                    background-clip: text;
+            color: transparent;
+            animation: slide 6s linear infinite;
+            filter: drop-shadow(0 0 18px rgba(139, 92, 246, 0.45));
+            cursor: default;
+        }
+        .name::before,
+        .name::after {
+            content: attr(data-text);
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .name::before { -webkit-text-fill-color: var(--cyan); }
+        .name::after { -webkit-text-fill-color: var(--pink); }
+        .name.is-glitch::before { opacity: 0.85; animation: glitch-a 450ms steps(2) both; }
+        .name.is-glitch::after { opacity: 0.85; animation: glitch-b 450ms steps(2) both; }
+        @keyframes glitch-a {
+            0%   { clip-path: inset(10% 0 60% 0); transform: translate(-4px, 0); }
+            33%  { clip-path: inset(50% 0 20% 0); transform: translate(4px, 0); }
+            66%  { clip-path: inset(80% 0 5% 0);  transform: translate(-3px, 0); }
+            100% { clip-path: inset(0 0 100% 0);  transform: none; }
+        }
+        @keyframes glitch-b {
+            0%   { clip-path: inset(70% 0 10% 0); transform: translate(4px, 0); }
+            33%  { clip-path: inset(20% 0 55% 0); transform: translate(-4px, 0); }
+            66%  { clip-path: inset(5% 0 75% 0);  transform: translate(3px, 0); }
+            100% { clip-path: inset(100% 0 0 0);  transform: none; }
+        }
+
+        .chips {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 14px;
+        }
+        .chip {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 5px 12px;
+            overflow: hidden;
+            border-radius: 999px;
+            border: 1px solid rgba(167, 139, 250, 0.3);
+            background: rgba(139, 92, 246, 0.12);
+            color: var(--ink);
+            font-size: 0.8125rem;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+        }
+        .chip[hidden] { display: none; }
+        .chip--lvl { font-family: var(--display); font-size: 0.72rem; letter-spacing: 0.08em; }
+        .chip__xp {
+            position: relative;
+            width: 42px;
+            height: 5px;
+            overflow: hidden;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.12);
+        }
+        .chip__xp::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background: linear-gradient(90deg, var(--cyan), var(--pink));
+            transform-origin: left;
+            animation: xp 4s var(--ease-out) infinite;
+        }
+        @keyframes xp {
+            0%   { transform: scaleX(0.1); }
+            80%  { transform: scaleX(1); }
+            100% { transform: scaleX(1); opacity: 0; }
+        }
+        .status-dot {
+            flex: none;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--st);
+            box-shadow: 0 0 8px var(--st);
+            animation: blink 1.6s ease-in-out infinite;
+        }
+        @keyframes blink { 50% { opacity: 0.35; } }
+
+        /* ---------- Ticker ---------- */
+        .ticker {
+            overflow: hidden;
+            padding: 12px 0;
+            -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+                    mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+        }
+        .ticker__track {
+            display: flex;
+            width: max-content;
+            animation: marquee 16s linear infinite;
+        }
+        .ticker__track span {
+            padding: 0 14px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+        .ticker__track span:nth-child(4n+1) { color: var(--cyan); }
+        .ticker__track span:nth-child(4n+3) { color: var(--pink); }
+        .ticker__track span:nth-child(even) { color: var(--ink-faint); }
+        @keyframes marquee { to { transform: translateX(-50%); } }
+
+        /* ---------- Tilt (desktop) ---------- */
+        .tilt {
+            transform: perspective(700px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) scale(var(--s, 1));
+            transition: transform 220ms var(--ease-out), box-shadow 250ms var(--ease-out);
+        }
+        .tilt:active { --s: 0.97; }
+
+        /* ---------- Discord presence ---------- */
+        .presence { padding: 14px; }
+        .presence__head {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+        }
+        .presence__logo { flex: none; width: 18px; height: 18px; color: #8c95ff; }
+        .presence__who {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+            flex: 1;
+            min-width: 0;
+            white-space: nowrap;
+        }
+        .presence__name { overflow: hidden; text-overflow: ellipsis; font-weight: 700; }
+        .presence__handle { overflow: hidden; text-overflow: ellipsis; font-size: 0.8125rem; color: var(--ink-faint); }
+        .presence__profile {
+            flex: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(140, 149, 255, 0.35);
+            background: rgba(88, 101, 242, 0.15);
+            color: #c7ccff;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-decoration: none;
+            transition: background-color 200ms var(--ease-out), transform 160ms var(--ease-out);
+        }
+        .presence__profile:active { transform: scale(0.94); }
+        .presence__profile svg { width: 12px; height: 12px; }
+        .presence__custom,
+        .presence__idle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin: 10px 0 0;
+            font-size: 0.8125rem;
+            line-height: 1.4;
+            color: var(--ink-muted);
+            overflow-wrap: anywhere;
+        }
+        .presence__custom { padding: 7px 10px; border-radius: 12px; background: rgba(255, 255, 255, 0.05); }
+        .presence__custom img { flex: none; width: 18px; height: 18px; object-fit: contain; }
+        .presence__custom[hidden],
+        .presence__idle[hidden] { display: none; }
+
+        .acts { display: grid; gap: 10px; margin-top: 10px; }
+        .acts:empty { display: none; }
+        .act {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding-top: 10px;
+            border-top: 1px solid var(--line);
+            animation: rise 450ms var(--ease-out) backwards;
+        }
+        .act__art { position: relative; flex: none; width: 56px; height: 56px; }
+        .act__img,
+        .act__fallback {
+            width: 100%;
+            height: 100%;
+            border-radius: 12px;
+            object-fit: cover;
+            background: rgba(255, 255, 255, 0.06);
+        }
+        .act__fallback { display: grid; place-items: center; color: var(--violet); }
+        .act__fallback svg { width: 26px; height: 26px; animation: wiggle 2s ease-in-out infinite; }
+        @keyframes wiggle { 0%, 100% { transform: rotate(-8deg); } 50% { transform: rotate(8deg); } }
+        .act__small {
+            position: absolute;
+            right: -5px;
+            bottom: -5px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 3px solid var(--panel);
+            background: var(--panel);
+            object-fit: cover;
+        }
+        .act__body { display: flex; flex-direction: column; flex: 1; min-width: 0; line-height: 1.35; }
+        .act__label {
+            font-size: 0.6875rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--violet);
+        }
+        .act--spotify .act__label { color: #1ed760; }
+        .act__title,
+        .act__line { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .act__title { color: var(--ink); font-size: 0.9rem; font-weight: 700; text-decoration: none; }
+        a.act__title:hover { text-decoration: underline; }
+        .act__line { font-size: 0.8125rem; color: var(--ink-muted); }
+        .act__time { font-size: 0.75rem; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+        .bar { height: 4px; margin-top: 7px; overflow: hidden; border-radius: 2px; background: rgba(255, 255, 255, 0.1); }
+        .bar__fill {
+            height: 100%;
+            border-radius: inherit;
+            background: #1ed760;
+            box-shadow: 0 0 10px #1ed760;
+            transform-origin: left;
+            transform: scaleX(var(--p, 0));
+            transition: transform 1s linear;
+        }
+        .bar__times {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 4px;
+            font-size: 0.6875rem;
+            color: var(--ink-faint);
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* ---------- Music player ---------- */
+        .player {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            width: 100%;
+            padding: 12px 16px 12px 12px;
+            text-align: left;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+        .player__btn {
+            position: relative;
+            flex: none;
+            display: grid;
+            place-items: center;
+            width: 46px;
+            height: 46px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, var(--cyan), var(--purple) 60%, var(--pink));
+            background-size: 200% 200%;
+            color: #fff;
+            box-shadow: 0 0 22px -4px var(--purple);
+            animation: slide 5s linear infinite;
+        }
+        .player__btn svg {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            transition: opacity 180ms var(--ease-out), transform 180ms var(--ease-out);
+        }
+        .player__icon-pause,
+        .player__spinner { opacity: 0; transform: scale(0.6); }
+        .player__spinner {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2.5px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #fff;
+            transition: opacity 180ms var(--ease-out), transform 180ms var(--ease-out);
+        }
+        .player[data-state="playing"] .player__icon-play,
+        .player[data-state="loading"] .player__icon-play { opacity: 0; transform: scale(0.6); }
+        .player[data-state="playing"] .player__icon-pause { opacity: 1; transform: none; }
+        .player[data-state="loading"] .player__spinner { opacity: 1; transform: none; animation: spin 0.8s linear infinite; }
+        .player__meta { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+        .player__title { font-weight: 700; line-height: 1.3; }
+        .player__status { font-size: 0.8125rem; line-height: 1.35; color: var(--ink-faint); }
+        .player[data-state="playing"] .player__status { color: var(--cyan); }
+        .player[data-state="error"] .player__status { color: #ff8f8f; }
+        kbd {
+            display: inline-block;
+            min-width: 1.5em;
+            padding: 0 0.35em;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-bottom-width: 2px;
+            font-family: ui-monospace, Menlo, Consolas, monospace;
+            font-size: 0.72rem;
+            line-height: 1.4;
+            text-align: center;
+            color: var(--ink-muted);
+        }
+
+        /* Equaliser never stops: slow idle wave, full bounce when playing */
+        .eq { flex: none; display: flex; align-items: flex-end; gap: 3px; height: 22px; }
+        .eq i {
+            display: block;
+            width: 3px;
+            height: 100%;
+            border-radius: 2px;
+            background: linear-gradient(to top, var(--cyan), var(--pink));
+            transform-origin: bottom;
+            animation: eq-idle 1.8s ease-in-out infinite alternate;
+        }
+        .eq i:nth-child(2) { animation-delay: -0.4s; }
+        .eq i:nth-child(3) { animation-delay: -0.9s; }
+        .eq i:nth-child(4) { animation-delay: -1.3s; }
+        .eq i:nth-child(5) { animation-delay: -0.2s; }
+        @keyframes eq-idle { from { transform: scaleY(0.15); } to { transform: scaleY(0.45); } }
+        .player[data-state="playing"] .eq i { animation: eq-play 700ms ease-in-out infinite alternate; }
+        .player[data-state="playing"] .eq i:nth-child(2) { animation-duration: 520ms; }
+        .player[data-state="playing"] .eq i:nth-child(3) { animation-duration: 860ms; }
+        .player[data-state="playing"] .eq i:nth-child(4) { animation-duration: 610ms; }
+        .player[data-state="playing"] .eq i:nth-child(5) { animation-duration: 740ms; }
+        @keyframes eq-play { from { transform: scaleY(0.15); } to { transform: scaleY(1); } }
+
+        /* ---------- Links ---------- */
+        .links {
+            list-style: none;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 12px;
+            margin: 0;
+            padding: 0;
+        }
+        .link-row { display: flex; gap: 10px; }
+        .link-row .link { flex: 1; min-width: 0; }
+
+        .link {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 12px 16px 12px 12px;
+            color: inherit;
+            text-decoration: none;
+            touch-action: manipulation;
+        }
+        .link__icon {
+            flex: none;
+            display: grid;
+            place-items: center;
+            width: 46px;
+            height: 46px;
+            border-radius: 14px;
+            background: color-mix(in srgb, var(--brand) 22%, transparent);
+            color: var(--brand-ink, var(--brand));
+            box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 35%, transparent), 0 0 18px -6px var(--brand);
+            transition: background-color 200ms var(--ease-out), color 200ms var(--ease-out), transform 300ms var(--ease-out);
+        }
+        .link__icon svg { width: 22px; height: 22px; }
+        .link__text { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+        .link__title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1.02rem;
+            font-weight: 700;
+            line-height: 1.3;
+        }
+        .link__sub {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 0.8125rem;
+            line-height: 1.35;
+            color: var(--ink-faint);
+        }
+        .link__arrow {
+            flex: none;
+            width: 20px;
+            height: 20px;
+            color: var(--ink-faint);
+            animation: nudge 2.4s ease-in-out infinite;
+            animation-delay: var(--d, 0s);
+        }
+        @keyframes nudge {
+            0%, 70%, 100% { transform: translate(0, 0); }
+            80% { transform: translate(3px, -3px); }
+        }
+
+        .link--featured { padding-block: 16px; }
+        .link--featured .link__icon {
+            width: 52px;
+            height: 52px;
+            background: linear-gradient(135deg, var(--cyan), var(--purple), var(--pink));
+            background-size: 200% 200%;
+            color: #fff;
+            box-shadow: 0 0 26px -4px var(--purple);
+            animation: slide 4s linear infinite;
+        }
+        .link--featured .link__title { font-family: var(--display); font-size: 1.05rem; font-weight: 800; letter-spacing: -0.01em; }
+        .badge {
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: linear-gradient(90deg, var(--pink), var(--purple));
+            color: #fff;
+            font-family: var(--font);
+            font-size: 0.625rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            line-height: 1.6;
+            text-transform: uppercase;
+            animation: badge 1.6s ease-in-out infinite;
+        }
+        @keyframes badge {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(244, 114, 182, 0.7); }
+            50%      { box-shadow: 0 0 0 6px rgba(244, 114, 182, 0); }
+        }
+
+        .live-dot {
+            display: inline-block;
+            width: 7px;
+            height: 7px;
+            margin-right: 6px;
+            border-radius: 50%;
+            background: #23a55a;
+            box-shadow: 0 0 6px #23a55a;
+            vertical-align: 1px;
+            animation: blink 1.6s ease-in-out infinite;
+        }
+
+        .side-btn {
+            flex: none;
+            display: grid;
+            place-items: center;
+            width: 60px;
+            padding: 0;
+            color: var(--ink-muted);
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+        .side-btn svg {
+            grid-area: 1 / 1;
+            width: 20px;
+            height: 20px;
+            transition: opacity 180ms var(--ease-out), transform 180ms var(--ease-out);
+        }
+        .side-btn .icon-done { opacity: 0; transform: scale(0.5); color: #6ee7a0; }
+        .side-btn.is-done .icon-copy { opacity: 0; transform: scale(0.5); }
+        .side-btn.is-done .icon-done { opacity: 1; transform: none; }
+
+        @media (hover: hover) and (pointer: fine) {
+            .tilt:hover { --s: 1.025; box-shadow: 0 16px 50px -16px var(--glow, rgba(139, 92, 246, 0.9)); }
+            .tilt:active { --s: 0.97; }
+            .link:hover .link__icon { background: var(--brand); color: #fff; transform: rotate(-8deg) scale(1.08); }
+            .link--featured:hover .link__icon { transform: rotate(-8deg) scale(1.08); }
+            .link:hover .link__arrow { color: var(--ink); }
+            .share:hover,
+            .side-btn:hover { color: var(--ink); }
+            .presence__profile:hover { background-color: rgba(88, 101, 242, 0.3); }
+            .avatar:hover .avatar__face { transform: scale(1.05); }
+        }
+
+        .player:focus-visible,
+        .link:focus-visible,
+        .side-btn:focus-visible,
+        .share:focus-visible,
+        .avatar:focus-visible {
+            outline: 2px solid var(--cyan);
+            outline-offset: 3px;
+        }
+
+        /* ---------- Effects + toast ---------- */
+        .fx {
+            position: fixed;
+            inset: 0;
+            z-index: 20;
+            overflow: hidden;
+            pointer-events: none;
+        }
+        .fx > * { position: absolute; will-change: transform, opacity; }
+        .fx-spark {
+            width: 8px;
+            height: 8px;
+            margin: -4px 0 0 -4px;
+            border-radius: 50%;
+            background: #fff;
+            box-shadow: 0 0 8px 2px var(--c, var(--cyan)), 0 0 20px 5px var(--c, var(--cyan));
+        }
+        .fx-ring {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 3px solid var(--c, var(--cyan));
+            box-shadow: 0 0 24px var(--c, var(--cyan)), inset 0 0 24px var(--c, var(--cyan));
+        }
+
+        .toast {
+            position: fixed;
+            left: 50%;
+            bottom: max(24px, calc(env(safe-area-inset-bottom) + 12px));
+            z-index: 30;
+            max-width: calc(100vw - 32px);
+            padding: 11px 18px;
+            border-radius: 999px;
+            border: 1px solid rgba(167, 139, 250, 0.45);
+            background: rgba(13, 9, 25, 0.92);
+            box-shadow: 0 0 30px -6px rgba(139, 92, 246, 0.8);
+            font-weight: 600;
+            white-space: nowrap;
+            opacity: 0;
+            transform: translate(-50%, 16px) scale(0.9);
+            transition: opacity 240ms var(--ease-out), transform 240ms var(--ease-out);
+            pointer-events: none;
+        }
+        .toast.is-visible { opacity: 1; transform: translate(-50%, 0) scale(1); }
+
+        .footer {
+            margin: 0;
+            font-size: 0.8125rem;
+            line-height: 1.7;
+            color: var(--ink-faint);
+            text-align: center;
+        }
+        .footer strong {
+            background: var(--neon);
+            background-size: 300% 100%;
+            -webkit-background-clip: text;
+                    background-clip: text;
+            color: transparent;
+            animation: slide 5s linear infinite;
+        }
+        .footer__hint { display: block; font-size: 0.75rem; animation: blink 2.4s ease-in-out infinite; }
+
+        @media (max-width: 380px) {
+            .link, .player { gap: 12px; }
+            .side-btn { width: 54px; }
+        }
+
+        /* Respect people who ask their device for less motion */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 1ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 1ms !important;
+            }
+            .ticker__track { flex-wrap: wrap; justify-content: center; width: auto; }
+            .ticker__track span:nth-child(n + 9) { display: none; }
+            .ticker { -webkit-mask-image: none; mask-image: none; }
         }
     </style>
 </head>
-<body class="text-white">
+<body>
 
-    <!-- Main Content -->
-    <div class="min-h-screen flex flex-col items-center justify-center p-4 relative z-10">
-        <div class="content-card w-full max-w-sm mx-auto rounded-lg p-8 text-center">
-            
-            <img src="https://placehold.co/128x128/0a0514/f97316?text=G" alt="Avatar" class="w-24 h-24 rounded-full mx-auto mb-4 border-2 border-orange-500/50 shadow-lg">
-            
-            <h1 class="text-3xl font-bold text-white" style="text-shadow: 0 0 10px #f97316;">Gabytzu</h1>
-            <p class="text-orange-300/80 text-sm mt-1">14 years old</p> 
-
-            <!-- Audio Toggle - Moved inside the content-card for better positioning -->
-            <button id="music-btn" class="mt-4 mb-2 text-gray-400 hover:text-orange-400 transition-colors z-20 mx-auto">
-                <svg id="music-icon-on" xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
-                <svg id="music-icon-off" xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
-            </button>
-            <p id="audio-status" class="text-orange-300/80 text-xs mt-1 h-4"></p> <!-- Audio status message -->
-            <p id="animated-subtitle" class="text-orange-300/80 mt-2 h-6"></p>
-
-            <!-- Visitor Counter -->
-            <div class="mt-4 text-orange-300/80 text-sm">
-                Visitors: <span id="visitor-count" class="font-bold text-orange-400">0</span>
-            </div>
-
-            <div class="space-y-4 mt-8 w-full">
-                <a href="https://discord.gg/tUcEZ6kp5a" class="link-button flex items-center justify-center gap-4 w-full bg-black/30 hover:bg-orange-500/20 border border-orange-500/20 hover:border-orange-400 transition-all duration-300 p-4 rounded-md font-semibold">
-                    <!-- Updated Discord Icon (official logo) -->
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" class="fill-current"><path d="M20.317 4.431c-1.457-.791-3.138-1.404-4.925-1.748a.502.502 0 0 0-.476.549c.143.737.318 1.484.502 2.221-2.25-.453-4.42-1.185-6.398-2.221a.502.502 0 0 0-.476-.549c-1.787.344-3.468.957-4.925 1.748a.502.502 0 0 0-.21.846l.12.102c2.14.98 4.132 2.24 5.923 3.753a.502.502 0 0 0 .695 0c1.79-1.513 3.782-2.773 5.923-3.753l.12-.102a.502.502 0 0 0-.21-.846zM9.73 14.333c-.99 0-1.79-.81-1.79-1.81s.8-1.81 1.79-1.81c.99 0 1.79.81 1.79 1.81s-.8 1.81-1.79 1.81zm4.54 0c-.99 0-1.79-.81-1.79-1.81s.8-1.81 1.79-1.81c.99 0 1.79.81 1.79 1.81s-.8 1.81-1.79 1.81z"/><path d="M3.734 8.031c0 4.88 3.08 8.843 6.85 9.796a.502.502 0 0 0 .546-.376c.15-.64.33-1.28.52-1.92.05-.16.1-.32.16-.48a.502.502 0 0 0-.3-.6c-.9-.4-1.7-.9-2.5-1.5a.502.502 0 0 1-.06-.7c.3-.3.6-.6.9-.9.2-.2.5-.2.7-.1l.1.1c.9.5 1.8 1 2.8 1.4.3.1.6.1.9 0 .9-.4 1.8-.9 2.8-1.4l.1-.1c.2-.1.5-.1.7.1.3.3.6.6.9.9.2.2.1.5-.1.7-.8.6-1.6 1.1-2.5 1.5a.502.502 0 0 0-.3.6c.1.2.1.3.2.5.2.6.4 1.3.5 1.9a.502.502 0 0 0 .5.4c3.77-.953 6.85-4.916 6.85-9.796C20.266 8.031 3.734 8.031 3.734 8.031z"/></svg>
-                    <span>Discord</span>
-                </a>
-                   <a href="https://www.youtube.com/@Raccoon_Team" class="link-button flex items-center justify-center gap-4 w-full bg-black/30 hover:bg-orange-500/20 border border-orange-500/20 hover:border-orange-400 transition-all duration-300 p-4 rounded-md font-semibold">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" class="fill-current"><path d="M21.582 6.186A2.682 2.682 0 0 0 19.7 4.304C18 .38 12 .38 12 .38s6 0 7.7-.324A2.682 2.682 0 0 0 2.418 6.186 28.02 28.02 0 0 0 2 12a28.02 28.02 0 0 0 .418 5.814A2.682 2.682 0 0 0 4.3 19.696C6 20.02 12 20.02 12 20.02s6 0 7.7-.324a2.682 2.682 0 0 0 1.882-1.882A28.02 28.02 0 0 0 22 12a28.02 28.02 0 0 0-.418-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
-                    <span>YouTube</span>
-                </a>
-                <a href="https://gameunlocker.sell.app/" class="link-button flex items-center justify-center gap-4 w-full bg-black/30 hover:bg-orange-500/20 border border-orange-500/20 hover:border-orange-400 transition-all duration-300 p-4 rounded-md font-semibold">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
-                    <span>Shop</span>
-                </a>
-                   <a href="https://www.roblox.com/users/2767596730/profile?friendshipSourceType=PlayerSearch" class="link-button flex items-center justify-center gap-4 w-full bg-black/30 hover:bg-orange-500/20 border border-orange-500/20 hover:border-orange-400 transition-all duration-300 p-4 rounded-md font-semibold">
-                    <!-- Updated Roblox Icon (generic cube/block) -->
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5z"/></svg>
-                    <span>Roblox</span>
-                </a>
-            </div>
-        </div>
+    <div class="scene" aria-hidden="true">
+        <div class="blob blob--1"></div>
+        <div class="blob blob--2"></div>
+        <div class="blob blob--3"></div>
+        <div class="horizon"></div>
+        <div class="grid"></div>
+        <div class="scan"></div>
     </div>
+    <canvas id="bg" aria-hidden="true"></canvas>
+    <div class="cursor" id="cursor" aria-hidden="true"></div>
+
+    <main class="page" id="page">
+        <section class="hub" aria-labelledby="name">
+
+            <header class="hero">
+                <button id="share" class="share neon reveal" style="--i: 0; --d: -2s" type="button" aria-label="Share this page" title="Share">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="m16 6-4-4-4 4"/><path d="M12 2v13"/></svg>
+                </button>
+
+                <button id="avatar" class="avatar reveal" style="--i: 0" type="button" aria-label="Tap for a surprise">
+                    <span class="avatar__halo" aria-hidden="true"></span>
+                    <span class="orbit" aria-hidden="true"></span>
+                    <span class="orbit orbit--2" aria-hidden="true"></span>
+                    <span class="orbit orbit--3" aria-hidden="true"></span>
+                    <span class="avatar__ring avatar__ring--2" aria-hidden="true"></span>
+                    <span class="avatar__ring" aria-hidden="true"></span>
+                    <!-- Your Discord avatar replaces the letter automatically once DISCORD_USER_ID is set. -->
+                    <span class="avatar__face" aria-hidden="true">
+                        <span class="avatar__letter">G</span>
+                        <img id="avatar-img" class="avatar__img" alt="">
+                    </span>
+                    <span id="avatar-status" class="avatar__status" hidden></span>
+                </button>
+
+                <h1 id="name" class="name reveal" style="--i: 1" data-text="Gabytzu" aria-label="Gabytzu">Gabytzu</h1>
+
+                <div class="chips reveal" style="--i: 2">
+                    <span class="chip chip--lvl" aria-label="14 years old">LVL 14 <span class="chip__xp" aria-hidden="true"></span></span>
+                    <span id="dc-chip" class="chip" data-status="offline" hidden><span class="status-dot" aria-hidden="true"></span><span id="dc-chip-text">Offline</span></span>
+                </div>
+            </header>
+
+            <div class="ticker reveal" style="--i: 3">
+                <p class="sr-only">IT Developer, Gamer, Problem Solver</p>
+                <div class="ticker__track" aria-hidden="true">
+                    <span>IT Developer</span><span>✦</span><span>Gamer</span><span>✦</span><span>Problem Solver</span><span>✦</span><span>NexusTV</span><span>✦</span>
+                    <span>IT Developer</span><span>✦</span><span>Gamer</span><span>✦</span><span>Problem Solver</span><span>✦</span><span>NexusTV</span><span>✦</span>
+                </div>
+            </div>
+
+            <div id="presence-wrap" class="float" style="--d: -1s" hidden>
+            <section id="presence" class="presence neon" aria-label="Discord status">
+                <div class="presence__head">
+                    <svg class="presence__logo" aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.030.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03ZM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418Zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418Z"/></svg>
+                    <span class="presence__who">
+                        <span id="dc-name" class="presence__name"></span>
+                        <span id="dc-handle" class="presence__handle"></span>
+                    </span>
+                    <a id="dc-profile" class="presence__profile" href="https://discord.com/" target="_blank" rel="noopener noreferrer">
+                        Profile
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg>
+                    </a>
+                </div>
+                <p id="dc-custom" class="presence__custom" hidden></p>
+                <p id="dc-idle" class="presence__idle" hidden></p>
+                <div id="dc-acts" class="acts"></div>
+            </section>
+            </div>
+
+            <div class="float reveal" style="--i: 4; --d: -0.5s">
+                <button id="player" class="player neon tilt" style="--d: -3s" type="button" data-state="idle" aria-pressed="false" aria-label="Play lofi music" aria-keyshortcuts="M">
+                    <span class="player__btn" aria-hidden="true">
+                        <svg class="player__icon-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v13.72a1 1 0 0 0 1.52.85l10.6-6.86a1 1 0 0 0 0-1.7L9.52 4.29A1 1 0 0 0 8 5.14Z"/></svg>
+                        <svg class="player__icon-pause" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1.2"/><rect x="14" y="5" width="4" height="14" rx="1.2"/></svg>
+                        <span class="player__spinner"></span>
+                    </span>
+                    <span class="player__meta">
+                        <span class="player__title">Lofi beats</span>
+                        <span id="player-status" class="player__status" aria-live="polite">Tap to vibe</span>
+                    </span>
+                    <span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+                </button>
+            </div>
+
+            <nav aria-label="Links">
+                <ul class="links">
+                    <li class="float reveal" style="--i: 5; --d: -1.5s">
+                        <a class="link link--featured neon tilt" href="https://nexustv.lol/" target="_blank" rel="noopener noreferrer" style="--brand: #8b5cf6; --d: -1s">
+                            <span class="link__icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="15" rx="2"/><path d="m17 2-5 5-5-5"/></svg>
+                            </span>
+                            <span class="link__text">
+                                <span class="link__title">NexusTV <span class="badge">New</span></span>
+                                <span class="link__sub">nexustv.lol</span>
+                            </span>
+                            <svg class="link__arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg>
+                        </a>
+                    </li>
+                    <li class="link-row float reveal" style="--i: 6; --d: -2.5s">
+                        <a class="link neon tilt" href="https://discord.gg/tUcEZ6kp5a" target="_blank" rel="noopener noreferrer" style="--brand: #5865f2; --brand-ink: #aab1ff; --glow: rgba(88, 101, 242, 0.9); --d: -2s">
+                            <span class="link__icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.030.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03ZM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418Zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418Z"/></svg>
+                            </span>
+                            <span class="link__text">
+                                <span id="dc-server-name" class="link__title">Discord</span>
+                                <span id="dc-server-sub" class="link__sub">Join the server</span>
+                            </span>
+                            <svg class="link__arrow" style="--d: -0.8s" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg>
+                        </a>
+                        <button class="side-btn neon tilt" style="--d: -4s" type="button" data-copy="https://discord.gg/tUcEZ6kp5a" data-toast="Discord invite copied 📋" aria-label="Copy Discord invite link" title="Copy invite">
+                            <svg class="icon-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="14" height="14" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                            <svg class="icon-done" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+                        </button>
+                    </li>
+                    <li class="float reveal" style="--i: 7; --d: -3.5s">
+                        <a class="link neon tilt" href="https://www.youtube.com/@Raccoon_Team" target="_blank" rel="noopener noreferrer" style="--brand: #ff0033; --brand-ink: #ff6b81; --glow: rgba(255, 0, 51, 0.7); --d: -3s">
+                            <span class="link__icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814ZM9.545 15.568V8.432L15.818 12l-6.273 3.568Z"/></svg>
+                            </span>
+                            <span class="link__text">
+                                <span class="link__title">YouTube</span>
+                                <span class="link__sub">@Raccoon_Team</span>
+                            </span>
+                            <svg class="link__arrow" style="--d: -1.6s" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </section>
+
+        <footer class="footer reveal" style="--i: 8">
+            &copy; <span id="year">2026</span> <strong>Gabytzu</strong> · GG WP 🎮
+            <span class="footer__hint">tap the avatar · tap the sky · press M</span>
+        </footer>
+    </main>
+
+    <div class="fx" id="fx" aria-hidden="true"></div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            // Typing animation logic
-            const animatedSubtitle = document.getElementById('animated-subtitle');
-            if (animatedSubtitle) {
-                const phrases = ["IT Developer", "Gamer", "Problem Solver"];
-                let phraseIndex = 0;
-                let charIndex = 0;
-                let isDeleting = false;
+        (() => {
+            const $ = (sel, root = document) => root.querySelector(sel);
+            const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+            const finePointer = matchMedia('(hover: hover) and (pointer: fine)').matches;
+            const rand = (min, max) => min + Math.random() * (max - min);
+            const NEON = ['#22d3ee', '#a78bfa', '#f472b6'];
+            const pick = (list) => list[Math.floor(Math.random() * list.length)];
 
-                function typeAnimation() {
-                    const currentPhrase = phrases[phraseIndex];
-                    if (isDeleting) {
-                        animatedSubtitle.textContent = currentPhrase.substring(0, charIndex - 1);
-                        charIndex--;
-                    } else {
-                        animatedSubtitle.textContent = currentPhrase.substring(0, charIndex + 1);
-                        charIndex++;
-                    }
+            $('#year').textContent = new Date().getFullYear();
 
-                    let typeSpeed = 150;
-                    if (isDeleting) typeSpeed /= 2;
+            // ---------- Toast ----------
+            const toastEl = $('#toast');
+            let toastTimer;
+            const toast = (message) => {
+                toastEl.textContent = message;
+                toastEl.classList.add('is-visible');
+                clearTimeout(toastTimer);
+                toastTimer = setTimeout(() => toastEl.classList.remove('is-visible'), 2000);
+            };
 
-                    if (!isDeleting && charIndex === currentPhrase.length) {
-                        typeSpeed = 2000;
-                        isDeleting = true;
-                    } else if (isDeleting && charIndex === 0) {
-                        isDeleting = false;
-                        phraseIndex = (phraseIndex + 1) % phrases.length;
-                        typeSpeed = 500;
-                    }
-                    setTimeout(typeAnimation, typeSpeed);
+            // ---------- Effects layer ----------
+            const fx = $('#fx');
+            const spawn = (className, x, y, color) => {
+                const node = document.createElement('div');
+                node.className = className;
+                node.style.left = `${x}px`;
+                node.style.top = `${y}px`;
+                if (color) node.style.setProperty('--c', color);
+                fx.append(node);
+                return node;
+            };
+            // Motion eases out fast; the fade eases in, so sparks stay bright while they fly.
+            const flyAndFade = (node, from, to, duration) => {
+                node.animate([{ opacity: 1 }, { opacity: 0 }], { duration, easing: 'cubic-bezier(0.55, 0, 0.9, 0.3)', fill: 'forwards' });
+                node.animate([{ transform: from }, { transform: to }], { duration, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' })
+                    .onfinish = () => node.remove();
+            };
+            const burst = (x, y, count = 18) => {
+                if (reduceMotion || fx.childElementCount > 120) return;
+                flyAndFade(spawn('fx-ring', x, y, pick(NEON)), 'translate(-50%, -50%) scale(0.2)', 'translate(-50%, -50%) scale(1.6)', 700);
+                for (let k = 0; k < count; k++) {
+                    const angle = rand(0, 360);
+                    flyAndFade(spawn('fx-spark', x, y, pick(NEON)),
+                        `rotate(${angle}deg) translateX(${rand(6, 20)}px) scale(1.2)`,
+                        `rotate(${angle + rand(90, 220)}deg) translateX(${rand(70, 150)}px) scale(0.2)`,
+                        rand(650, 1050));
                 }
-                setTimeout(typeAnimation, 1000);
+            };
+
+            // ---------- Canvas: constellation that reacts to you ----------
+            const canvas = $('#bg');
+            const ctx = canvas.getContext('2d');
+            const pointer = { x: -9999, y: -9999 };
+            let width = 0;
+            let height = 0;
+            let dots = [];
+            let frameId = 0;
+
+            const resize = () => {
+                const dpr = Math.min(window.devicePixelRatio || 1, 2);
+                width = innerWidth;
+                height = innerHeight;
+                canvas.width = width * dpr;
+                canvas.height = height * dpr;
+                canvas.style.width = `${width}px`;
+                canvas.style.height = `${height}px`;
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                const count = Math.round(Math.min(110, Math.max(36, (width * height) / 15000)));
+                dots = Array.from({ length: count }, () => ({
+                    x: rand(0, width), y: rand(0, height),
+                    vx: rand(-0.3, 0.3), vy: rand(-0.3, 0.3),
+                    r: rand(1, 2.2), c: pick(NEON),
+                }));
+            };
+
+            const draw = () => {
+                ctx.clearRect(0, 0, width, height);
+                for (const d of dots) {
+                    d.x += d.vx;
+                    d.y += d.vy;
+                    if (d.x < -10) d.x = width + 10; else if (d.x > width + 10) d.x = -10;
+                    if (d.y < -10) d.y = height + 10; else if (d.y > height + 10) d.y = -10;
+                    const dx = d.x - pointer.x;
+                    const dy = d.y - pointer.y;
+                    const dist = Math.hypot(dx, dy);
+                    if (dist > 0 && dist < 130) {
+                        const push = ((130 - dist) / 130) * 1.2;
+                        d.x += (dx / dist) * push;
+                        d.y += (dy / dist) * push;
+                    }
+                }
+                ctx.lineWidth = 1;
+                for (let i = 0; i < dots.length; i++) {
+                    const a = dots[i];
+                    for (let j = i + 1; j < dots.length; j++) {
+                        const b = dots[j];
+                        const dist = Math.hypot(a.x - b.x, a.y - b.y);
+                        if (dist < 115) {
+                            ctx.strokeStyle = `rgba(167, 139, 250, ${((1 - dist / 115) * 0.35).toFixed(3)})`;
+                            ctx.beginPath();
+                            ctx.moveTo(a.x, a.y);
+                            ctx.lineTo(b.x, b.y);
+                            ctx.stroke();
+                        }
+                    }
+                    const toPointer = Math.hypot(a.x - pointer.x, a.y - pointer.y);
+                    if (toPointer < 180) {
+                        ctx.strokeStyle = `rgba(34, 211, 238, ${((1 - toPointer / 180) * 0.6).toFixed(3)})`;
+                        ctx.beginPath();
+                        ctx.moveTo(a.x, a.y);
+                        ctx.lineTo(pointer.x, pointer.y);
+                        ctx.stroke();
+                    }
+                }
+                for (const d of dots) {
+                    ctx.fillStyle = d.c;
+                    ctx.shadowColor = d.c;
+                    ctx.shadowBlur = 8;
+                    ctx.beginPath();
+                    ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.shadowBlur = 0;
+                frameId = requestAnimationFrame(draw);
+            };
+
+            resize();
+            addEventListener('resize', resize);
+            if (reduceMotion) {
+                frameId = requestAnimationFrame(() => { draw(); cancelAnimationFrame(frameId); });
+            } else {
+                draw();
+                document.addEventListener('visibilitychange', () => {
+                    cancelAnimationFrame(frameId);
+                    if (!document.hidden) draw();
+                });
             }
-            
-            // Music Toggle
-            const musicBtn = document.getElementById('music-btn');
-            const onIcon = document.getElementById('music-icon-on');
-            const offIcon = document.getElementById('music-icon-off');
-            const audioStatus = document.getElementById('audio-status'); // Element for audio status
-            let musicPlaying = false;
-            let lofiPlayer = null; // Initialize as null
-            let isAudioContextInitialized = false; // Flag to ensure Tone.js context is started only once
 
-            // Updated music URL
-            const musicUrl = "https://drive.usercontent.google.com/download?id=182D-TYmwxlULAklHLEjTMsNYynROXTBn&export=download&authuser=6&confirm=t&uuid=6e19dd15-4126-42af-920d-4c6ac6aa8b1f&at=AN8xHoovcSGfPzW123tfFLgdzAxe:1753405072953"; 
-
-            musicBtn.addEventListener('click', async () => {
-                try {
-                    // Ensure audio context is started on user gesture
-                    await Tone.start();
-                    audioStatus.textContent = "Audio context started.";
-                    isAudioContextInitialized = true; // Mark context as started
-
-                    // If player is not yet initialized, create and load it
-                    if (lofiPlayer === null) {
-                        audioStatus.textContent = "Loading music...";
-                        lofiPlayer = new Tone.Player({
-                            url: musicUrl,
-                            loop: true,
-                            autostart: false
-                        }).toDestination();
-
-                        // Wait for the player to load the audio buffer
-                        await lofiPlayer.loaded; // This promise resolves when the buffer is loaded
-                        audioStatus.textContent = "Music ready!";
-                    }
-
-                    // Now, toggle play/pause based on current state
-                    if (!musicPlaying) {
-                        lofiPlayer.start(); // This will resume if paused, or start from beginning if stopped/first play
-                        onIcon.classList.remove('hidden');
-                        offIcon.classList.add('hidden');
-                        musicPlaying = true;
-                        audioStatus.textContent = "Music playing.";
-                    } else {
-                        lofiPlayer.pause(); // Change from stop() to pause() to allow resuming
-                        onIcon.classList.add('hidden');
-                        offIcon.classList.remove('hidden');
-                        musicPlaying = false;
-                        audioStatus.textContent = "Music paused."; // Update status message
-                    }
-                } catch (error) {
-                    console.error("Error with music playback:", error);
-                    audioStatus.textContent = "Error with music. Check console.";
-                    // Reset state on critical error
-                    musicPlaying = false;
-                    if (lofiPlayer) {
-                        lofiPlayer.dispose(); // Clean up player
-                        lofiPlayer = null;
-                    }
-                    onIcon.classList.add('hidden');
-                    offIcon.classList.remove('hidden');
-                    isAudioContextInitialized = false; // Allow re-initialization attempt
+            // ---------- Cursor glow + pointer tracking ----------
+            const glow = $('#cursor');
+            let glowX = innerWidth / 2;
+            let glowY = innerHeight / 2;
+            let aimX = glowX;
+            let aimY = glowY;
+            let glowFrame = 0;
+            const followGlow = () => {
+                glowX += (aimX - glowX) * 0.12;
+                glowY += (aimY - glowY) * 0.12;
+                glow.style.transform = `translate3d(${glowX.toFixed(1)}px, ${glowY.toFixed(1)}px, 0)`;
+                glowFrame = Math.abs(aimX - glowX) + Math.abs(aimY - glowY) > 0.5 ? requestAnimationFrame(followGlow) : 0;
+            };
+            addEventListener('pointermove', (e) => {
+                pointer.x = e.clientX;
+                pointer.y = e.clientY;
+                if (finePointer && !reduceMotion) {
+                    aimX = e.clientX;
+                    aimY = e.clientY;
+                    glow.classList.add('is-on');
+                    if (!glowFrame) glowFrame = requestAnimationFrame(followGlow);
                 }
+            }, { passive: true });
+            document.documentElement.addEventListener('pointerleave', () => {
+                pointer.x = pointer.y = -9999;
+                glow.classList.remove('is-on');
             });
-        });
+            addEventListener('pointerup', (e) => {
+                if (e.pointerType !== 'mouse') pointer.x = pointer.y = -9999;
+            });
+
+            // ---------- 3D tilt on cards ----------
+            if (finePointer && !reduceMotion) {
+                document.querySelectorAll('.tilt').forEach((card) => {
+                    card.addEventListener('pointermove', (e) => {
+                        const r = card.getBoundingClientRect();
+                        const px = (e.clientX - r.left) / r.width - 0.5;
+                        const py = (e.clientY - r.top) / r.height - 0.5;
+                        card.style.setProperty('--rx', `${(-py * 10).toFixed(2)}deg`);
+                        card.style.setProperty('--ry', `${(px * 12).toFixed(2)}deg`);
+                    });
+                    card.addEventListener('pointerleave', () => {
+                        card.style.setProperty('--rx', '0deg');
+                        card.style.setProperty('--ry', '0deg');
+                    });
+                });
+            }
+
+            // ---------- Name: scramble + glitch, on a loop ----------
+            const nameEl = $('#name');
+            const NAME = 'Gabytzu';
+            const GLYPHS = '!<>-_/[]{}=+*^?#01XZ$%&';
+            let scrambling = false;
+            const scramble = () => {
+                if (reduceMotion || scrambling) return;
+                scrambling = true;
+                nameEl.classList.add('is-glitch');
+                setTimeout(() => nameEl.classList.remove('is-glitch'), 450);
+                const steps = 16;
+                let step = 0;
+                const tick = () => {
+                    const text = [...NAME].map((ch, i) => (step >= (steps * (i + 1)) / NAME.length ? ch : pick([...GLYPHS]))).join('');
+                    nameEl.textContent = text;
+                    nameEl.dataset.text = text;
+                    if (step++ < steps) {
+                        setTimeout(tick, 38);
+                    } else {
+                        nameEl.textContent = NAME;
+                        nameEl.dataset.text = NAME;
+                        scrambling = false;
+                    }
+                };
+                tick();
+            };
+            setTimeout(scramble, 700);
+            setInterval(() => { if (!document.hidden) scramble(); }, 6000);
+            nameEl.addEventListener('pointerenter', scramble);
+
+            // ---------- Lofi music player ----------
+            // Any direct link to an audio file works here. The most reliable
+            // option is to commit the file to this repo, e.g. "lofi.mp3".
+            const MUSIC_SRC = 'https://drive.usercontent.google.com/download?id=182D-TYmwxlULAklHLEjTMsNYynROXTBn&export=download&confirm=t';
+
+            const player = $('#player');
+            const status = $('#player-status');
+            const audio = new Audio();
+            audio.loop = true;
+            audio.preload = 'none';
+            audio.volume = 0.6;
+
+            const LABELS = {
+                idle:    [finePointer ? 'Click or press <kbd>M</kbd>' : 'Tap to vibe', 'Play lofi music'],
+                loading: ['Loading…',                    'Loading lofi music'],
+                playing: ['Now playing',                 'Pause lofi music'],
+                paused:  ['Paused',                      'Play lofi music'],
+                error:   ["Couldn't load, tap to retry", 'Retry loading lofi music'],
+            };
+
+            let state = 'idle';
+            const setState = (next) => {
+                state = next;
+                player.dataset.state = next;
+                player.setAttribute('aria-pressed', String(next === 'playing' || next === 'loading'));
+                player.setAttribute('aria-label', LABELS[next][1]);
+                status.innerHTML = LABELS[next][0];
+            };
+            setState('idle');
+
+            const toggleMusic = async () => {
+                if (state === 'playing' || state === 'loading') {
+                    audio.pause();
+                    setState('paused');
+                    return;
+                }
+                if (!audio.src || state === 'error') audio.src = MUSIC_SRC;
+                setState('loading');
+                try {
+                    await audio.play();
+                } catch (err) {
+                    // AbortError just means the user paused before it started.
+                    if (err.name !== 'AbortError') {
+                        console.error('Music playback failed:', err);
+                        setState('error');
+                    }
+                }
+            };
+
+            player.addEventListener('click', toggleMusic);
+            audio.addEventListener('playing', () => setState('playing'));
+            audio.addEventListener('waiting', () => { if (!audio.paused) setState('loading'); });
+            audio.addEventListener('error', () => { if (state !== 'idle') setState('error'); });
+
+            document.addEventListener('keydown', (e) => {
+                if ((e.key || '').toLowerCase() !== 'm' || e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
+                if (e.target.closest('input, textarea, [contenteditable]')) return;
+                toggleMusic();
+            });
+
+            // ---------- Clipboard + share ----------
+            const copyText = async (text) => {
+                try {
+                    await navigator.clipboard.writeText(text);
+                    return true;
+                } catch {
+                    const area = document.createElement('textarea');
+                    area.value = text;
+                    area.setAttribute('readonly', '');
+                    area.style.cssText = 'position:fixed;opacity:0;pointer-events:none';
+                    document.body.append(area);
+                    area.select();
+                    let ok = false;
+                    try { ok = document.execCommand('copy'); } catch {}
+                    area.remove();
+                    return ok;
+                }
+            };
+
+            document.querySelectorAll('[data-copy]').forEach((btn) => {
+                let resetTimer;
+                btn.addEventListener('click', async () => {
+                    const ok = await copyText(btn.dataset.copy);
+                    toast(ok ? btn.dataset.toast : "Couldn't copy, open the link instead");
+                    if (!ok) return;
+                    btn.classList.add('is-done');
+                    clearTimeout(resetTimer);
+                    resetTimer = setTimeout(() => btn.classList.remove('is-done'), 1600);
+                });
+            });
+
+            $('#share').addEventListener('click', async () => {
+                const url = location.href;
+                if (navigator.share) {
+                    try {
+                        await navigator.share({ title: document.title, text: "Check out Gabytzu's links", url });
+                    } catch { /* share sheet closed */ }
+                    return;
+                }
+                toast(await copyText(url) ? 'Page link copied 🔗' : "Couldn't copy the link");
+            });
+
+            // ---------- Avatar: tap for a burst ----------
+            const avatar = $('#avatar');
+            const face = $('.avatar__face');
+            const lines = ['GG! 🎮', '+100 XP ⚡', 'Achievement unlocked 🏆', 'Level up! ⬆️', 'Combo x3 🔥', 'Respawning…', 'No lag, only skill 😎'];
+            let lastLine = -1;
+            avatar.addEventListener('click', () => {
+                let i;
+                do { i = Math.floor(Math.random() * lines.length); } while (i === lastLine);
+                lastLine = i;
+                toast(lines[i]);
+                if (reduceMotion) return;
+                face.animate([
+                    { transform: 'rotate(0deg) scale(1)' },
+                    { transform: 'rotate(200deg) scale(0.88)', offset: 0.45 },
+                    { transform: 'rotate(360deg) scale(1)' },
+                ], { duration: 750, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
+                const r = avatar.getBoundingClientRect();
+                burst(r.left + r.width / 2, r.top + r.height / 2, 26);
+            });
+
+            // Tap anywhere in the background. Listening on <main> keeps taps working on iOS Safari.
+            $('#page').addEventListener('click', (e) => {
+                if (e.target.closest('a, button, .neon, .ticker')) return;
+                burst(e.clientX, e.clientY);
+            });
+
+            // ---------- Discord: live profile (Lanyard) + server stats ----------
+            // To show your live Discord status, activity and Spotify:
+            //   1. Join https://discord.gg/lanyard with your Discord account.
+            //   2. Discord → Settings → Advanced → turn on Developer Mode,
+            //      then right-click your name → Copy User ID, and paste it here.
+            const DISCORD_USER_ID = '';
+            const DISCORD_INVITE = 'tUcEZ6kp5a';
+
+            const SNOWFLAKE = /^\d{15,21}$/;
+            const STATUS_TEXT = { online: 'Online', idle: 'Idle', dnd: 'Do not disturb', offline: 'Offline' };
+            const IDLE_LINE = {
+                online: 'Online, come say hi 👋',
+                idle: 'Away for a bit 🌙',
+                dnd: 'Busy right now ⛔',
+                offline: 'Offline right now 💤',
+            };
+            const VERBS = { 0: 'Playing', 1: 'Streaming', 2: 'Listening to', 3: 'Watching', 5: 'Competing in' };
+            const GAMEPAD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 11h4M8 9v4M15 12h.01M18 10h.01"/><path d="M17.32 5H6.68a4 4 0 0 0-3.98 3.59l-.9 8.1A2.4 2.4 0 0 0 4.18 19.4c.83 0 1.6-.43 2.03-1.14L7.5 16h9l1.29 2.26c.43.71 1.2 1.14 2.03 1.14a2.4 2.4 0 0 0 2.38-2.71l-.9-8.1A4 4 0 0 0 17.32 5Z"/></svg>';
+
+            const presenceEl = $('#presence');
+            const presenceWrap = $('#presence-wrap');
+            const heroImg = $('#avatar-img');
+            const heroStatus = $('#avatar-status');
+            const statusChip = $('#dc-chip');
+
+            const el = (tag, className, text) => {
+                const node = document.createElement(tag);
+                if (className) node.className = className;
+                if (text != null) node.textContent = text;
+                return node;
+            };
+            const image = (src, alt, className, onFail) => {
+                const img = el('img', className);
+                img.alt = alt || '';
+                img.decoding = 'async';
+                img.referrerPolicy = 'no-referrer';
+                img.onerror = onFail || (() => img.remove());
+                img.src = src;
+                return img;
+            };
+            const fallbackArt = () => {
+                const box = el('div', 'act__fallback');
+                box.innerHTML = GAMEPAD;
+                return box;
+            };
+            const clock = (ms) => {
+                const total = Math.max(0, Math.floor(ms / 1000));
+                const hours = Math.floor(total / 3600);
+                const mins = Math.floor((total % 3600) / 60);
+                const secs = String(total % 60).padStart(2, '0');
+                return hours ? `${hours}:${String(mins).padStart(2, '0')}:${secs}` : `${mins}:${secs}`;
+            };
+
+            const avatarUrl = (user) => /^(a_)?[0-9a-f]{20,40}$/.test(user.avatar || '')
+                ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.${user.avatar.startsWith('a_') ? 'gif' : 'png'}?size=256`
+                : `https://cdn.discordapp.com/embed/avatars/${Number((BigInt(user.id) >> 22n) % 6n)}.png`;
+
+            // Activity image keys come in a few shapes; see Discord's Rich Presence docs.
+            const assetUrl = (appId, key) => {
+                if (!key) return null;
+                if (key.startsWith('mp:external/')) return `https://media.discordapp.net/external/${key.slice(12)}`;
+                if (key.startsWith('mp:')) return `https://media.discordapp.net/${key.slice(3)}`;
+                if (key.startsWith('spotify:')) return `https://i.scdn.co/image/${key.slice(8)}`;
+                return appId ? `https://cdn.discordapp.com/app-assets/${appId}/${key}.png?size=160` : null;
+            };
+
+            const activityRow = (activity) => {
+                const row = el('div', 'act');
+                const art = el('div', 'act__art');
+                const appId = SNOWFLAKE.test(activity.application_id || '') ? activity.application_id : null;
+                const assets = activity.assets || {};
+                const large = assetUrl(appId, assets.large_image);
+                art.append(large ? image(large, assets.large_text || activity.name, 'act__img', function () { this.replaceWith(fallbackArt()); }) : fallbackArt());
+                const small = assetUrl(appId, assets.small_image);
+                if (small) art.append(image(small, assets.small_text, 'act__small'));
+
+                const body = el('div', 'act__body');
+                body.append(el('span', 'act__label', VERBS[activity.type] || 'Activity'), el('span', 'act__title', activity.name));
+                if (activity.details) body.append(el('span', 'act__line', activity.details));
+                if (activity.state) body.append(el('span', 'act__line', activity.state));
+                const { start, end } = activity.timestamps || {};
+                if (start || end) {
+                    const time = el('span', 'act__time');
+                    if (start) time.dataset.start = start;
+                    else time.dataset.end = end;
+                    body.append(time);
+                }
+                row.append(art, body);
+                return row;
+            };
+
+            const spotifyRow = (spotify) => {
+                const row = el('div', 'act act--spotify');
+                const art = el('div', 'act__art');
+                const cover = /^https:\/\/i\.scdn\.co\//.test(spotify.album_art_url || '') ? spotify.album_art_url : null;
+                art.append(cover ? image(cover, spotify.album, 'act__img', function () { this.replaceWith(fallbackArt()); }) : fallbackArt());
+
+                const body = el('div', 'act__body');
+                const title = el(spotify.track_id ? 'a' : 'span', 'act__title', spotify.song);
+                if (spotify.track_id) {
+                    title.href = `https://open.spotify.com/track/${encodeURIComponent(spotify.track_id)}`;
+                    title.target = '_blank';
+                    title.rel = 'noopener noreferrer';
+                }
+                const artists = (spotify.artist || '').split(';').map((name) => name.trim()).join(', ');
+                body.append(el('span', 'act__label', 'Listening to Spotify'), title, el('span', 'act__line', `by ${artists}`));
+
+                const { start, end } = spotify.timestamps || {};
+                if (start && end) {
+                    const bar = el('div', 'bar');
+                    bar.dataset.start = start;
+                    bar.dataset.end = end;
+                    bar.append(el('div', 'bar__fill'));
+                    const times = el('div', 'bar__times');
+                    times.append(el('span', null, '0:00'), el('span', null, clock(end - start)));
+                    body.append(bar, times);
+                }
+                row.append(art, body);
+                return row;
+            };
+
+            const tickPresence = () => {
+                const now = Date.now();
+                presenceEl.querySelectorAll('.act__time').forEach((time) => {
+                    time.textContent = time.dataset.start
+                        ? `${clock(now - Number(time.dataset.start))} elapsed`
+                        : `${clock(Number(time.dataset.end) - now)} left`;
+                });
+                presenceEl.querySelectorAll('.bar').forEach((bar) => {
+                    const start = Number(bar.dataset.start);
+                    const end = Number(bar.dataset.end);
+                    const progress = Math.min(1, Math.max(0, (now - start) / (end - start)));
+                    bar.firstChild.style.setProperty('--p', progress.toFixed(4));
+                    bar.nextSibling.firstChild.textContent = clock(Math.min(now, end) - start);
+                });
+            };
+            setInterval(() => { if (!presenceWrap.hidden && !document.hidden) tickPresence(); }, 1000);
+
+            let lastActivityKey = '';
+            const renderPresence = (data) => {
+                const user = data && data.discord_user;
+                if (!user || !SNOWFLAKE.test(user.id || '')) return;
+                const status = STATUS_TEXT[data.discord_status] ? data.discord_status : 'offline';
+                const activities = Array.isArray(data.activities) ? data.activities : [];
+
+                const src = avatarUrl(user);
+                if (heroImg.dataset.src !== src) {
+                    heroImg.dataset.src = src;
+                    heroImg.onload = () => face.classList.add('has-img');
+                    heroImg.onerror = () => face.classList.remove('has-img');
+                    heroImg.src = src;
+                }
+                heroStatus.dataset.status = status;
+                heroStatus.title = STATUS_TEXT[status];
+                heroStatus.hidden = false;
+
+                const onMobileOnly = data.active_on_discord_mobile && !data.active_on_discord_desktop && !data.active_on_discord_web;
+                statusChip.dataset.status = status;
+                $('#dc-chip-text').textContent = STATUS_TEXT[status] + (status !== 'offline' && onMobileOnly ? ' on mobile' : '');
+                statusChip.hidden = false;
+
+                $('#dc-name').textContent = user.global_name || user.display_name || user.username;
+                $('#dc-handle').textContent = `@${user.username}`;
+                $('#dc-profile').href = `https://discord.com/users/${user.id}`;
+
+                const custom = activities.find((a) => a.type === 4);
+                const customEl = $('#dc-custom');
+                customEl.replaceChildren();
+                if (custom && (custom.state || (custom.emoji && custom.emoji.name))) {
+                    const emoji = custom.emoji || {};
+                    if (SNOWFLAKE.test(emoji.id || '')) {
+                        customEl.append(image(`https://cdn.discordapp.com/emojis/${emoji.id}.${emoji.animated ? 'gif' : 'png'}?size=48`, emoji.name));
+                    } else if (emoji.name) {
+                        customEl.append(el('span', null, emoji.name));
+                    }
+                    if (custom.state) customEl.append(el('span', null, custom.state));
+                }
+                customEl.hidden = !customEl.hasChildNodes();
+
+                const rows = [];
+                if (data.listening_to_spotify && data.spotify) rows.push(spotifyRow(data.spotify));
+                for (const activity of activities) {
+                    if (rows.length >= 3) break;
+                    if (activity.type === 4 || (data.listening_to_spotify && activity.id === 'spotify:1')) continue;
+                    rows.push(activityRow(activity));
+                }
+                // Only animate rows in when the activity actually changed.
+                const key = JSON.stringify([
+                    data.listening_to_spotify && data.spotify && data.spotify.track_id,
+                    activities.filter((a) => a.type !== 4).map((a) => [a.name, a.details, a.state]),
+                ]);
+                if (key === lastActivityKey) rows.forEach((row) => { row.style.animation = 'none'; });
+                lastActivityKey = key;
+                $('#dc-acts').replaceChildren(...rows);
+
+                const idle = $('#dc-idle');
+                idle.textContent = IDLE_LINE[status];
+                idle.hidden = rows.length > 0 || !customEl.hidden;
+
+                if (presenceWrap.hidden) {
+                    presenceWrap.hidden = false;
+                    presenceWrap.classList.add('reveal');
+                }
+                tickPresence();
+            };
+
+            // Lanyard: one REST call for a fast first paint, then a WebSocket for live updates.
+            const startLanyard = () => {
+                if (!SNOWFLAKE.test(DISCORD_USER_ID)) return;
+                let socket;
+                let heartbeat;
+                let attempts = 0;
+
+                const connect = () => {
+                    if (attempts > 8) return;
+                    socket = new WebSocket('wss://api.lanyard.rest/socket');
+                    socket.addEventListener('message', (event) => {
+                        let msg;
+                        try { msg = JSON.parse(event.data); } catch { return; }
+                        if (msg.op === 1) {
+                            clearInterval(heartbeat);
+                            heartbeat = setInterval(() => {
+                                if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ op: 3 }));
+                            }, (msg.d && msg.d.heartbeat_interval) || 30000);
+                            socket.send(JSON.stringify({ op: 2, d: { subscribe_to_id: DISCORD_USER_ID } }));
+                        } else if (msg.op === 0 && (msg.t === 'INIT_STATE' || msg.t === 'PRESENCE_UPDATE')) {
+                            attempts = 0;
+                            renderPresence(msg.d);
+                        }
+                    });
+                    socket.addEventListener('close', () => {
+                        clearInterval(heartbeat);
+                        setTimeout(connect, Math.min(30000, 1000 * 2 ** attempts++));
+                    });
+                };
+
+                fetch(`https://api.lanyard.rest/v1/users/${DISCORD_USER_ID}`)
+                    .then((res) => res.json())
+                    .then((json) => {
+                        if (json.success) {
+                            renderPresence(json.data);
+                            connect();
+                        } else {
+                            console.warn('Lanyard:', (json.error && json.error.message) || json.error, '(join https://discord.gg/lanyard)');
+                        }
+                    })
+                    .catch(connect);
+            };
+
+            // Server name + live member counts on the Discord link.
+            const loadServerStats = () => {
+                if (!/^[\w-]+$/.test(DISCORD_INVITE)) return;
+                fetch(`https://discord.com/api/v10/invites/${DISCORD_INVITE}?with_counts=true`)
+                    .then((res) => (res.ok ? res.json() : Promise.reject(res.status)))
+                    .then((invite) => {
+                        const compact = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 });
+                        if (invite.guild && invite.guild.name) $('#dc-server-name').textContent = invite.guild.name;
+                        if (typeof invite.approximate_presence_count === 'number') {
+                            $('#dc-server-sub').replaceChildren(
+                                el('span', 'live-dot'),
+                                `${compact.format(invite.approximate_presence_count)} online · ${compact.format(invite.approximate_member_count)} members`,
+                            );
+                        }
+                    })
+                    .catch(() => { /* keep the static text */ });
+            };
+
+            startLanyard();
+            loadServerStats();
+        })();
     </script>
 </body>
 </html>
