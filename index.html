@@ -1163,7 +1163,8 @@
         .proj-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 12px 0 0; padding: 0; list-style: none; }
         .proj-grid:empty { display: none; }
         .link__blurb { margin: 4px 0 0; color: var(--ink-muted); font-size: 0.875rem; line-height: 1.45; }
-        .proj .link__sub { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+        .proj .link__sub { white-space: normal; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; }
+        .proj-grid > li:only-child { grid-column: 1 / -1; }
 
         .stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; max-width: 620px; margin: 0 auto; }
         .stack .presence { margin: 0; }
@@ -2108,8 +2109,15 @@
             const CONFIG = {
                 bio: '',       // 1–3 sentences about you, shown in About
                 nexustv: '',   // one line describing NexusTV
-                skills: [],    // e.g. ['JavaScript', 'Python', { name: 'HTML/CSS', level: 80 }]
-                projects: [],  // e.g. [{ title: 'My app', description: 'What it does', url: 'https://…', tag: 'Web' }]
+                skills: ['Python', 'CustomTkinter', 'REST APIs'],  // e.g. ['JavaScript', { name: 'HTML/CSS', level: 80 }]
+                projects: [    // e.g. { title: 'My app', description: 'What it does', url: 'https://…', tag: 'Web' }
+                    {
+                        title: 'Steam Account Switcher',
+                        description: 'Windows app to switch between Steam accounts in one click, with ban status and top games.',
+                        url: 'https://github.com/adi839/Steam-switcher',
+                        tag: 'Python',
+                    },
+                ],
                 channel: '',   // one line about the YouTube channel
                 videoId: '',   // optional: an 11-character YouTube video ID to embed
             };
