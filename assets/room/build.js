@@ -40,7 +40,18 @@ const slab = (x0, x1, y0, y1, z0, z1) => {
     return g;
 };
 
+// Clearcoat, sheen and friends only on High; Low and Medium get the cheaper standard material.
+const PHYSICAL_ONLY = ['clearcoat', 'clearcoatRoughness', 'sheen', 'sheenRoughness', 'sheenColor'];
+const makeMaterial = (rich) => (params) => {
+    if (rich) return new THREE.MeshPhysicalMaterial(params);
+    const plain = { ...params };
+    PHYSICAL_ONLY.forEach((k) => delete plain[k]);
+    return new THREE.MeshStandardMaterial(plain);
+};
+
 export function buildRoom({ scene, tex, quality = 'high', renderer }) {
+    const rich = quality === 'high';
+    const phys = makeMaterial(rich);
     const maxAniso = renderer.capabilities.getMaxAnisotropy();
     const colliders = [];
     const interactive = [];   // meshes that can be targeted (solid or interactive)
@@ -93,22 +104,22 @@ export function buildRoom({ scene, tex, quality = 'high', renderer }) {
     const wallPlaster = T.plaster('#d9d3ca', { repeat: [1, 1], seed: 5 });
     const ceilPlaster = T.plaster('#f7f5f1', { repeat: [1, 1], seed: 9 });
     const M = {
-        floor: new THREE.MeshPhysicalMaterial({ map: tex.floorColor, bumpMap: tex.floorBump, bumpScale: 1.2, roughnessMap: tex.floorRough, roughness: 0.9, clearcoat: 0.18, clearcoatRoughness: 0.28, color: 0xe9ddd0 }),
+        floor: phys({ map: tex.floorColor, bumpMap: tex.floorBump, bumpScale: 1.2, roughnessMap: tex.floorRough, roughness: 0.9, clearcoat: 0.18, clearcoatRoughness: 0.28, color: 0xe9ddd0 }),
         brick: new THREE.MeshStandardMaterial({ map: tex.brickColor, bumpMap: tex.brickBump, bumpScale: 2.2, roughnessMap: tex.brickRough, roughness: 1, color: 0xd9cfc9 }),
         plaster: new THREE.MeshStandardMaterial({ map: wallPlaster.map, bumpMap: wallPlaster.bump, bumpScale: 0.6, roughness: 0.94 }),
         ceiling: new THREE.MeshStandardMaterial({ map: ceilPlaster.map, bumpMap: ceilPlaster.bump, bumpScale: 0.15, roughness: 0.96 }),
         paint: new THREE.MeshStandardMaterial({ color: 0xf1eee8, roughness: 0.45 }),
-        walnut: new THREE.MeshPhysicalMaterial({ map: tex.deskWood, roughness: 0.52, clearcoat: 0.35, clearcoatRoughness: 0.3 }),
+        walnut: phys({ map: tex.deskWood, roughness: 0.52, clearcoat: 0.35, clearcoatRoughness: 0.3 }),
         blackMetal: new THREE.MeshStandardMaterial({ color: 0x1d1e22, metalness: 0.75, roughness: 0.38 }),
         alu: new THREE.MeshStandardMaterial({ color: 0xc8cbd1, metalness: 1, roughness: 0.28 }),
         chrome: new THREE.MeshStandardMaterial({ color: 0xe6e8ec, metalness: 1, roughness: 0.12 }),
-        plastic: new THREE.MeshPhysicalMaterial({ color: 0x0f1013, roughness: 0.4, clearcoat: 0.25, clearcoatRoughness: 0.35 }),
+        plastic: phys({ color: 0x0f1013, roughness: 0.4, clearcoat: 0.25, clearcoatRoughness: 0.35 }),
         matteBlack: new THREE.MeshStandardMaterial({ color: 0x131417, roughness: 0.7 }),
-        glass: new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.03, metalness: 0, transparent: true, opacity: 0.12, depthWrite: false, side: THREE.DoubleSide, envMapIntensity: 1.4 }),
-        tintedGlass: new THREE.MeshPhysicalMaterial({ color: 0x9aa4b8, roughness: 0.04, metalness: 0.1, transparent: true, opacity: 0.28, depthWrite: false, envMapIntensity: 1.6 }),
-        leather: new THREE.MeshPhysicalMaterial({ color: 0x17171b, roughness: 0.48, clearcoat: 0.18, clearcoatRoughness: 0.45, sheen: 0.4, sheenRoughness: 0.5, sheenColor: new THREE.Color(0x3a3a44) }),
-        leatherRed: new THREE.MeshPhysicalMaterial({ color: 0xa3102f, roughness: 0.5, clearcoat: 0.15, sheen: 0.3, sheenColor: new THREE.Color(0x551020) }),
-        curtain: new THREE.MeshPhysicalMaterial({ color: 0x2c3548, roughness: 0.95, sheen: 1, sheenColor: new THREE.Color(0x7d89a6), sheenRoughness: 0.55, side: THREE.DoubleSide }),
+        glass: phys({ color: 0xffffff, roughness: 0.03, metalness: 0, transparent: true, opacity: 0.12, depthWrite: false, side: THREE.DoubleSide, envMapIntensity: 1.4 }),
+        tintedGlass: phys({ color: 0x9aa4b8, roughness: 0.04, metalness: 0.1, transparent: true, opacity: 0.28, depthWrite: false, envMapIntensity: 1.6 }),
+        leather: phys({ color: 0x17171b, roughness: 0.48, clearcoat: 0.18, clearcoatRoughness: 0.45, sheen: 0.4, sheenRoughness: 0.5, sheenColor: new THREE.Color(0x3a3a44) }),
+        leatherRed: phys({ color: 0xa3102f, roughness: 0.5, clearcoat: 0.15, sheen: 0.3, sheenColor: new THREE.Color(0x551020) }),
+        curtain: phys({ color: 0x2c3548, roughness: 0.95, sheen: 1, sheenColor: new THREE.Color(0x7d89a6), sheenRoughness: 0.55, side: THREE.DoubleSide }),
         hole: new THREE.MeshBasicMaterial({ color: 0x000000, opacity: 0, blending: THREE.NoBlending, side: THREE.FrontSide }),
         pcb: new THREE.MeshStandardMaterial({ color: 0x14181c, roughness: 0.6, metalness: 0.2 }),
     };
@@ -280,7 +291,7 @@ export function buildRoom({ scene, tex, quality = 'high', renderer }) {
     anim.keyboard = kbTopMat;
 
     // mouse
-    const mouse = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16), new THREE.MeshPhysicalMaterial({ color: 0x111215, roughness: 0.3, clearcoat: 0.6 }));
+    const mouse = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16), phys({ color: 0x111215, roughness: 0.3, clearcoat: 0.6 }));
     mouse.scale.set(0.032, 0.018, 0.058);
     mouse.position.set(0.34, deskTop + 0.012, -2.42);
     add(mouse, { parent: desk, interact: 'pc' });
@@ -293,7 +304,7 @@ export function buildRoom({ scene, tex, quality = 'high', renderer }) {
     phone.position.set(-0.36, deskTop + 0.005, -2.4);
     phone.rotation.set(-Math.PI / 2, 0, 0.35);
     desk.add(phone);
-    add(new THREE.Mesh(rbox(0.074, 0.156, 0.009, 0.009), new THREE.MeshPhysicalMaterial({ color: 0x1a1b20, metalness: 0.6, roughness: 0.3, clearcoat: 1 })), { parent: phone, interact: 'phone' });
+    add(new THREE.Mesh(rbox(0.074, 0.156, 0.009, 0.009), phys({ color: 0x1a1b20, metalness: 0.6, roughness: 0.3, clearcoat: 1 })), { parent: phone, interact: 'phone' });
     const phoneScreen = new THREE.Group();
     phoneScreen.position.z = 0.0048;
     phone.add(phoneScreen);
@@ -395,7 +406,7 @@ export function buildRoom({ scene, tex, quality = 'high', renderer }) {
     const neonGroup = new THREE.Group();
     neonGroup.position.set(0, 1.97, z0 + 0.03);
     scene.add(neonGroup);
-    const neonBack = new THREE.Mesh(rbox(1.5, 0.4, 0.012, 0.01), new THREE.MeshPhysicalMaterial({ color: 0xffffff, transparent: true, opacity: 0.08, roughness: 0.05, depthWrite: false }));
+    const neonBack = new THREE.Mesh(rbox(1.5, 0.4, 0.012, 0.01), phys({ color: 0xffffff, transparent: true, opacity: 0.08, roughness: 0.05, depthWrite: false }));
     add(neonBack, { parent: neonGroup, cast: false, interact: 'neon' });
     const neonTubeMat = new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, toneMapped: false });
     const neonGlowMat = new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false, opacity: 0.75 });
@@ -444,7 +455,7 @@ export function buildRoom({ scene, tex, quality = 'high', renderer }) {
     [-0.6, 0, 0.6].forEach((cz) => add(new THREE.Mesh(rbox(0.012, 0.3, 0.56, 0.004), M.walnut), { parent: mediaConsole }).position.set(0.225, 0.27, cz));
     [[-0.17, -0.85], [0.17, -0.85], [-0.17, 0.85], [0.17, 0.85]].forEach(([cx, cz]) => add(new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.009, 0.05, 10), M.blackMetal), { parent: mediaConsole }).position.set(cx, 0.025, cz));
     // game console
-    add(new THREE.Mesh(rbox(0.1, 0.05, 0.28, 0.012), new THREE.MeshPhysicalMaterial({ color: 0xf2f3f5, roughness: 0.3, clearcoat: 0.6 })), { parent: mediaConsole }).position.set(0.02, 0.495, -0.5);
+    add(new THREE.Mesh(rbox(0.1, 0.05, 0.28, 0.012), phys({ color: 0xf2f3f5, roughness: 0.3, clearcoat: 0.6 })), { parent: mediaConsole }).position.set(0.02, 0.495, -0.5);
     const consoleLed = new THREE.Mesh(new THREE.BoxGeometry(0.002, 0.004, 0.08), new THREE.MeshBasicMaterial({ color: 0x3b82f6, toneMapped: false }));
     consoleLed.position.set(0.071, 0.495, -0.5);
     mediaConsole.add(consoleLed);
@@ -453,7 +464,7 @@ export function buildRoom({ scene, tex, quality = 'high', renderer }) {
 
     /* ---------------------------------------------------------------- rug */
     const rugMat = [new THREE.MeshStandardMaterial({ color: 0x1b1f2b, roughness: 1 })];
-    const rugTop = new THREE.MeshPhysicalMaterial({ map: T.rug({ w: 1024, h: 1024 }), roughness: 0.98, sheen: 0.8, sheenColor: new THREE.Color(0x8b8fa0), sheenRoughness: 0.8 });
+    const rugTop = phys({ map: T.rug({ w: 1024, h: 1024 }), roughness: 0.98, sheen: 0.8, sheenColor: new THREE.Color(0x8b8fa0), sheenRoughness: 0.8 });
     const rugMesh = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.012, 2.05), [rugMat[0], rugMat[0], rugTop, rugMat[0], rugMat[0], rugMat[0]]);
     rugMesh.position.set(-1.98, 0.006, 0.2);
     add(rugMesh, { cast: false, solid: true }).userData.floor = true;
@@ -505,10 +516,11 @@ export function buildRoom({ scene, tex, quality = 'high', renderer }) {
         const cover = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.8), M.glass);
         cover.position.z = 0.016;
         g.add(cover);
-        return g;
+        return art.material;
     };
     posterFrame('nexustv', 0.2, 1.55, z1 - 0.013, Math.PI, 'poster-nexustv');
-    posterFrame('honcho', -0.8, 1.55, z1 - 0.013, Math.PI, 'poster-honcho');
+    // the YouTube channel poster is redrawn with the channel's name once it is known
+    anim.channelPoster = posterFrame('channel', -0.8, 1.55, z1 - 0.013, Math.PI, 'poster-channel');
     posterFrame('steam', x0 + 0.013, 1.55, -2.05, Math.PI / 2, 'poster-steam');
 
     /* ---------------------------------------------------------------- ceiling light + LED cove */
@@ -549,19 +561,23 @@ export function buildRoom({ scene, tex, quality = 'high', renderer }) {
     sun.position.set(x1 + 8, 3.9, 1.6);
     sun.target.position.set(0, 0.3, -0.2);
     scene.add(sun, sun.target);
-    sun.castShadow = true;
-    sun.shadow.mapSize.setScalar(quality === 'low' ? 1024 : 2048);
+    sun.castShadow = quality !== 'low';
+    sun.shadow.mapSize.setScalar(rich ? 2048 : 1024);
     Object.assign(sun.shadow.camera, { left: -6, right: 6, top: 5, bottom: -5, near: 1, far: 22 });
     sun.shadow.bias = -0.0004;
     sun.shadow.normalBias = 0.025;
     sun.shadow.radius = 3;
     lights.sun = sun;
 
-    const sky = new THREE.RectAreaLight(0xcfe0ff, 2.2, win.z1 - win.z0, win.y1 - win.y0);
-    sky.position.set(x1 + 0.02, (win.y0 + win.y1) / 2, 0);
-    sky.lookAt(0, 1.3, 0);
-    scene.add(sky);
-    lights.sky = sky;
+    // soft light from the window (area lights are costly: High only; the sky
+    // environment map does this job on the other settings)
+    if (rich) {
+        const sky = new THREE.RectAreaLight(0xcfe0ff, 2.2, win.z1 - win.z0, win.y1 - win.y0);
+        sky.position.set(x1 + 0.02, (win.y0 + win.y1) / 2, 0);
+        sky.lookAt(0, 1.3, 0);
+        scene.add(sky);
+        lights.sky = sky;
+    }
 
     const ceiling = new THREE.PointLight(0xffd9ad, 9, 0, 2);
     ceiling.position.set(0, h - 0.25, 0);
@@ -572,8 +588,8 @@ export function buildRoom({ scene, tex, quality = 'high', renderer }) {
     scene.add(ceiling);
     lights.ceiling = ceiling;
 
-    // screens light the room a little (skipped on low quality: area lights are costly)
-    if (quality !== 'low') {
+    // screens light the room a little (High only: area lights are costly)
+    if (rich) {
         const monitorLight = new THREE.RectAreaLight(0x8a9cff, 3, SCREENS.pc.w, SCREENS.pc.h);
         monitorLight.position.set(0, 1.13, -2.76);
         monitorLight.lookAt(0, 1.0, -1.5);
@@ -651,11 +667,28 @@ export function buildRoom({ scene, tex, quality = 'high', renderer }) {
 // Place the loaded glTF models; each one gets an invisible box so aiming at it is cheap.
 export function placeModels(room, scene, models) {
     const { add, collide, blob, interactive } = room;
+    // Real glass ("transmission") makes three.js draw the whole room twice per
+    // frame; outside High it becomes plain see-through glass instead.
+    const cheapen = (m) => {
+        if (!m) return;
+        if (m.transmission > 0) {
+            m.transmission = 0;
+            m.transparent = true;
+            m.opacity = Math.min(m.opacity, 0.35);
+            m.depthWrite = false;
+        }
+        if (m.iridescence > 0) m.iridescence = 0;
+        if (m.anisotropy > 0) m.anisotropy = 0;
+    };
     const tidy = (root) => {
         const drop = [];
         root.traverse((o) => {
             if (o.isLight || o.isCamera || /firefly|Camera0|Key_Light/i.test(o.name)) drop.push(o);
-            if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; }
+            if (o.isMesh) {
+                o.castShadow = true;
+                o.receiveShadow = true;
+                if (room.quality !== 'high') [].concat(o.material).forEach(cheapen);
+            }
         });
         drop.forEach((o) => o.parent && o.parent.remove(o));
         return root;
@@ -705,16 +738,19 @@ export function placeModels(room, scene, models) {
         // keep only the car itself (the model ships with a cloth display stand)
         models.ToyCar.scene.traverse((o) => { if (/fabric/i.test(o.name)) o.visible = false; });
     }
-    // table lamp: a warm bulb inside the shade
+    // table lamp: a warm bulb inside the shade (a real light from Medium up)
     if (placed.lamp) {
         const { box } = placed.lamp;
-        const bulb = new THREE.PointLight(0xffb86b, 1.4, 4, 2);
-        bulb.position.set((box.min.x + box.max.x) / 2, box.min.y + (box.max.y - box.min.y) * 0.7, (box.min.z + box.max.z) / 2);
-        scene.add(bulb);
+        const spot = new THREE.Vector3((box.min.x + box.max.x) / 2, box.min.y + (box.max.y - box.min.y) * 0.7, (box.min.z + box.max.z) / 2);
+        if (room.quality !== 'low') {
+            const bulb = new THREE.PointLight(0xffb86b, 1.4, 4, 2);
+            bulb.position.copy(spot);
+            scene.add(bulb);
+            room.lights.lamp = bulb;
+        }
         const halo = room.glowSprite(0xffb070, 0.5, 0.35);
-        halo.position.copy(bulb.position);
+        halo.position.copy(spot);
         scene.add(halo);
-        room.lights.lamp = bulb;
         room.anim.lampHalo = halo;
     }
     // wall sconces either side of the TV, washing light down the wall

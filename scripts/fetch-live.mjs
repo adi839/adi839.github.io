@@ -3,7 +3,7 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 
 const GITHUB_USER = 'adi839';
-const YOUTUBE_HANDLE = 'Raccoon_Team';
+const YOUTUBE_HANDLE = 'VTEAM2';
 // Optional: set the YT_CHANNEL_ID repository variable if the handle lookup ever fails.
 const YOUTUBE_CHANNEL_ID = process.env.YT_CHANNEL_ID || '';
 const HIDDEN = ['asdasd', 'MyMusicFiles', 'Game_Data_JSON', 'Game_Data_JSON2', 'adi839', 'adi839.github.io', 'dasdsada', 'movie-verse-ai-hub', 'Temp-Spoofer', 'MyGameFixes'];

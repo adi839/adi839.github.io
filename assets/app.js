@@ -1,9 +1,9 @@
 import { initLive } from './live.js';
 import * as sfx from './sfx.js';
 
-// Any direct link to an audio file works. For the boombox to pulse to the
-// beat, the file must live in this repo (e.g. 'assets/lofi.mp3').
-const MUSIC_SRC = 'https://drive.usercontent.google.com/download?id=182D-TYmwxlULAklHLEjTMsNYynROXTBn&export=download&confirm=t';
+// The song: upload an mp3 to the repo as assets/music.mp3 (GitHub → assets →
+// Add file → Upload files). Being on this site, the room can also pulse to its beat.
+const MUSIC_SRC = 'assets/music.mp3';
 const TOTAL_STARS = 10;
 
 const $ = (sel) => document.querySelector(sel);
@@ -82,6 +82,7 @@ const MUSIC_TEXT = {
     playing: 'Now playing',
     paused: 'Paused',
     error: "Couldn't load the music. Tap to retry.",
+    missing: 'No song yet: add assets/music.mp3 to the site',
 };
 const musicListeners = [];
 const setMusic = (next) => {
@@ -93,6 +94,7 @@ const setMusic = (next) => {
     playBtn.setAttribute('aria-label', on ? 'Pause music' : 'Play music');
     musicBtn.setAttribute('aria-label', on ? 'Pause music (M)' : 'Play music (M)');
     musicStatus.textContent = MUSIC_TEXT[next];
+    if (next === 'missing') toast('🎵 No song yet: add assets/music.mp3 to the site', 4000);
     musicListeners.forEach((fn) => fn(next));
 };
 
@@ -122,7 +124,7 @@ const toggleMusic = async () => {
         setMusic('paused');
         return;
     }
-    if (!audio.src || musicState === 'error') audio.src = MUSIC_SRC;
+    if (!audio.src || musicState === 'error' || musicState === 'missing') audio.src = MUSIC_SRC;
     setupAnalyser();
     setMusic('loading');
     try {
@@ -133,7 +135,13 @@ const toggleMusic = async () => {
 };
 audio.addEventListener('playing', () => setMusic('playing'));
 audio.addEventListener('waiting', () => { if (!audio.paused) setMusic('loading'); });
-audio.addEventListener('error', () => { if (musicState !== 'idle') setMusic('error'); });
+audio.addEventListener('error', async () => {
+    if (musicState === 'idle') return;
+    // tell "there is no song yet" apart from a real loading problem
+    let missing = false;
+    try { missing = (await fetch(MUSIC_SRC, { method: 'HEAD', cache: 'no-store' })).status === 404; } catch { /* offline */ }
+    setMusic(missing ? 'missing' : 'error');
+});
 musicBtn.addEventListener('click', toggleMusic);
 playBtn.addEventListener('click', toggleMusic);
 
@@ -154,18 +162,23 @@ const readLevel = () => {
     }
     return level;
 };
+let vizResting = false;
 const drawViz = () => {
     const lv = readLevel();
-    if (!document.hidden && musicPanel.offsetParent) {
+    const playing = musicState === 'playing';
+    // In the room the panel is only on screen while it sits in a window or pop-up.
+    const shown = !document.hidden && (!is3d() || musicPanel.parentNode !== content);
+    if (shown && (playing || !vizResting)) {
         const t = performance.now() / 1000;
         vizBars.forEach((bar, i) => {
-            let v;
-            if (analyser && musicState === 'playing') v = freq[i + 2] / 255;
-            else if (musicState === 'playing') v = lv * (0.5 + 0.5 * Math.abs(Math.sin(t * 3 + i * 0.7)));
-            else v = 0.06 + 0.04 * Math.sin(t * 1.5 + i * 0.5);
+            let v = 0.08;
+            if (playing && analyser) v = freq[i + 2] / 255;
+            else if (playing) v = lv * (0.5 + 0.5 * Math.abs(Math.sin(t * 3 + i * 0.7)));
             bar.style.setProperty('--v', Math.max(0.05, Math.min(1, v)).toFixed(3));
         });
+        vizResting = !playing;
     }
+    if (playing) vizResting = false;
     requestAnimationFrame(drawViz);
 };
 requestAnimationFrame(drawViz);
@@ -243,6 +256,7 @@ const show = {
     github(data) { screens.dash.setEvents(data.events); },
     youtube({ channel, videos }) {
         screens.tv.setChannel(channel);
+        if (room && channel) room.setChannel(channel.title);
         screens.tv.setVideos(videos);
         screens.dash.setVideo(videos[0]);
     },
@@ -290,9 +304,20 @@ const showHint = (text, ms = 0) => {
     if (ms) hintTimer = setTimeout(() => { walkHint.hidden = true; }, ms);
 };
 
+// Draw less when the room is covered: nothing behind a full-screen PC/TV,
+// a third of the frames behind the docked screen, a quarter behind menus.
+const syncRenderRate = () => {
+    if (!room) return;
+    let every = 1;
+    if (presented) every = presented.where === 'flat' ? 0 : 3;
+    else if (!menu.hidden || !modal.hidden) every = 4;
+    room.setRenderRate(every);
+};
+
 // Keep the HUD bits (crosshair, prompt, hints) in step with what the player is doing.
 const syncWalkUi = () => {
     if (!room) return;
+    syncRenderRate();
     const walking = (room.mode === 'walk' || room.mode === 'armchair') && menu.hidden && modal.hidden;
     const locked = room.isLocked();
     html.classList.toggle('is-walking', walking && (locked || touch));
@@ -345,6 +370,7 @@ function closeModal({ quiet = false, keep = false, relock = false } = {}) {
     modalPanel = null;
     if (room) {
         room.pause(false);
+        syncRenderRate();
         if (relock && !touch && !room.dragMode) room.lock();
     }
     if (!quiet) syncWalkUi();
@@ -390,6 +416,7 @@ const present = (key) => {
         layoutDock();
     }
     box.hidden = false;
+    syncRenderRate();
 };
 const unpresent = () => {
     if (!presented) return;
@@ -405,6 +432,7 @@ const unpresent = () => {
         dockBox.hidden = true;
     }
     room.screen(key).append(screenApi(key).root);
+    syncRenderRate();
 };
 window.addEventListener('resize', () => {
     if (!presented) return;
@@ -453,7 +481,7 @@ const onInteract = (id) => {
         case 'boombox': {
             const wasOn = musicState === 'playing' || musicState === 'loading';
             toggleMusic();
-            toast(wasOn ? '⏸ Music paused' : '🎵 Lofi beats');
+            toast(wasOn ? '⏸ Music paused' : '🎵 Music on');
             break;
         }
         case 'door': openModal('about'); toast('🚪 Knock knock! Come find me online'); break;
@@ -570,10 +598,25 @@ const fallBackToClassic = (message) => {
     if (message) toast(message, 4000);
 };
 
+// "Auto" graphics: phones, built-in (integrated) and software graphics get Low,
+// everything else Medium. High only when picked in the menu.
+const gpuName = () => {
+    try {
+        const gl = document.createElement('canvas').getContext('webgl');
+        const ext = gl && gl.getExtension('WEBGL_debug_renderer_info');
+        const name = gl ? String(gl.getParameter(ext ? ext.UNMASKED_RENDERER_WEBGL : gl.RENDERER)) : '';
+        const lose = gl && gl.getExtension('WEBGL_lose_context');
+        if (lose) lose.loseContext();
+        return name;
+    } catch { return ''; }
+};
 const pickQuality = () => {
     const q = store.get('quality', 'auto');
     if (q === 'low' || q === 'medium' || q === 'high') return q;
-    return touch ? 'low' : 'medium';
+    if (touch) return 'low';
+    const gpu = gpuName();
+    const weak = /swiftshader|llvmpipe|software|basic render|intel|mali|adreno|powervr|radeon\(tm\) graphics|vega \d+ graphics|radeon graphics/i;
+    return weak.test(gpu) ? 'low' : 'medium';
 };
 
 const bootRoom = async () => {
@@ -668,11 +711,8 @@ const bootRoom = async () => {
                 toast(`★ Star ${starsFound.length}/10 found!`);
             }
         },
-        onFps: (fps) => {
-            if (fps < 14 && room && room.mode === 'walk' && pickQuality() !== 'low' && !store.get('slowTip', false)) {
-                store.set('slowTip', true);
-                toast('Running slow? Menu → Graphics → Low', 4000);
-            }
+        onSlow: () => {
+            if (room.quality !== 'low') toast('Still lagging? Esc → Graphics → Low (fast)', 6000);
         },
         isMusicOn: () => musicState === 'playing' || musicState === 'loading',
         getLevel: () => level,
@@ -680,6 +720,7 @@ const bootRoom = async () => {
     room.setSensitivity(Number(sensInput.value));
     room.dragMode = dragInput.checked;
     if (phoneNote) room.setPhoneNote(phoneNote);
+    if (latest.youtube && latest.youtube.channel) room.setChannel(latest.youtube.channel.title);
     window.__room = room;
 
     $('#scene').addEventListener('room:lost', () => fallBackToClassic('The 3D room stopped (graphics reset), here is the classic page.'));

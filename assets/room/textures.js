@@ -183,8 +183,8 @@ export function keyboard({ w = 1024, h = 320 } = {}) {
     return { map: toTexture(c), emissive: toTexture(e) };
 }
 
-/** Framed poster art. */
-export function poster(kind) {
+/** Framed poster art. `name` is the YouTube channel's name for the channel poster. */
+export function poster(kind, name = 'VTEAM') {
     const w = 768, h = 1024;
     const c = canvas(w, h);
     const g = c.getContext('2d');
@@ -248,7 +248,7 @@ export function poster(kind) {
         line('One click. Every account.', 730, 32);
         line('Ban status · Top games · Groups', 780, 26, 'rgba(255,255,255,0.6)');
         line('Python · CustomTkinter', 920, 30, '#7dd3fc', 700);
-    } else if (kind === 'honcho') {
+    } else if (kind === 'channel') {
         g.fillStyle = '#111';
         g.fillRect(0, 0, w, h);
         const grad = g.createRadialGradient(384, 420, 20, 384, 420, 520);
@@ -260,9 +260,17 @@ export function poster(kind) {
         g.beginPath(); g.roundRect(214, 290, 340, 240, 60); g.fill();
         g.fillStyle = '#ff0033';
         g.beginPath(); g.moveTo(344, 350); g.lineTo(344, 470); g.lineTo(450, 410); g.closePath(); g.fill();
-        title('HONCHO', 680, 96);
-        line('Roblox · Doors · Secrets', 750, 32);
-        line('youtube.com/@Raccoon_Team', 920, 30, '#fecdd3', 700);
+        // shrink long channel names until they fit the poster
+        const label = String(name).toUpperCase().slice(0, 24);
+        let size = 110;
+        g.font = `800 ${size}px Unbounded, "Arial Black", sans-serif`;
+        while (size > 40 && g.measureText(label).width > w - 90) {
+            size -= 6;
+            g.font = `800 ${size}px Unbounded, "Arial Black", sans-serif`;
+        }
+        title(label, 690, size);
+        line('New videos every week', 760, 32);
+        line('youtube.com/@VTEAM2', 920, 30, '#fecdd3', 700);
     }
     return toTexture(c);
 }

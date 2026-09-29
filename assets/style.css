@@ -84,6 +84,8 @@ img { max-width: 100%; }
 .world canvas.is-through { pointer-events: none; }
 .screen3d { overflow: hidden; background: #000; }
 .screen3d > * { width: 100%; height: 100%; }
+/* A moving gradient inside a 3D screen repaints the whole screen every frame. */
+.screen3d *, .screen3d *::before, .screen3d *::after { animation: none !important; }
 html[data-view="classic"] .world,
 html[data-view="classic"] .room-only { display: none !important; }
 html[data-touch] .desktop-only { display: none !important; }
