@@ -1,0 +1,9 @@
+{
+  "followers": null,
+  "repos": [
+    { "name": "nexustv-app", "description": "", "language": "", "stars": 0, "url": "https://github.com/adi839/nexustv-app", "homepage": "", "updated": "2026-09-27T18:14:37Z" },
+    { "name": "Music-Player", "description": "", "language": "", "stars": 0, "url": "https://github.com/adi839/Music-Player", "homepage": "", "updated": "2026-09-09T20:00:31Z" },
+    { "name": "Steam-switcher", "description": "", "language": "Python", "stars": 0, "url": "https://github.com/adi839/Steam-switcher", "homepage": "", "updated": "2026-01-07T06:23:42Z" }
+  ],
+  "events": []
+}

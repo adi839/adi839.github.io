@@ -1,46 +1,45 @@
 # adi839.github.io
 
-Gabytzu's personal presentation site: a single self-contained `index.html` served by GitHub Pages, plus `og.png` (the preview image shown when the link is shared).
+Gabytzu's site: a **3D world** you can explore, served by GitHub Pages. Every planet is something I make or a place you can find me, and the content updates on its own.
 
-Sections: **Home · About · Skills · Projects · Channel · Community · Contact**, with a lofi music player and a share button.
+| Planet | What's inside | Live? |
+|---|---|---|
+| 📺 NexusTV | link to nexustv.lol | repo stats |
+| 💬 Discord | server stats, invite, live profile (once set up) | yes |
+| ▶️ YouTube | newest uploads from @Raccoon_Team | refreshed every 6 hours |
+| 🐙 GitHub | public projects and recent activity | yes |
+| 🛠️ Steam Switcher | the project and its stats | repo stats |
+| 🎵 Music | lofi player; the planet pulses to the beat | – |
 
-## Filling in your content
+Things to do: drag to spin, scroll/pinch to zoom, click planets (or press **1–6**), **M** for music, **R** to reset, tap the core for a surprise, and find the **10 hidden stars**.
 
-Open `index.html` and find the `CONFIG` block near the bottom of the script. Every value is optional. An empty value simply hides that part of the page, so nothing looks unfinished.
+Visitors whose device can't run WebGL, or who have "reduce motion" turned on, get the **classic view**: the same content as a normal page. The **2D/3D** button switches between the two.
 
-```js
-const CONFIG = {
-    bio: '',       // 1–3 sentences about you, shown in About
-    nexustv: '',   // one line describing NexusTV
-    skills: [],    // e.g. ['JavaScript', 'Python', { name: 'HTML/CSS', level: 80 }]
-    projects: [],  // e.g. [{ title: 'My app', description: 'What it does', url: 'https://…', tag: 'Web' }]
-    channel: '',   // one line about the YouTube channel
-    videoId: '',   // optional: an 11-character YouTube video ID to embed
-};
-```
+## Files
 
-- The **Skills** section and its menu link only appear once `skills` has at least one entry.
-- `projects` are added after NexusTV (up to 6). Only `http` and `https` links are accepted.
-- `videoId` shows a thumbnail; the YouTube player loads only after a click.
+- `index.html`: the page and all panel content (also the classic view).
+- `assets/world.js`: the Three.js scene (planets, stars, particles, camera).
+- `assets/live.js`: GitHub, YouTube and Discord data. Settings are in the `CONFIG` block at the top.
+- `assets/app.js`: panels, keyboard, music, star hunt, view switching. `MUSIC_SRC` is at the top.
+- `assets/style.css`: all styles.
+- `vendor/`: Three.js r170 (MIT, see `vendor/THREE-LICENSE`), bundled so the site doesn't depend on a CDN.
+- `data/*.json` + `scripts/fetch-live.mjs` + `.github/workflows/live-data.yml`: the GitHub Action that refreshes YouTube and GitHub data every 6 hours. You can also run it by hand from the **Actions** tab (**Refresh live data** → **Run workflow**).
+
+## Settings
+
+- **Hide a repo from the GitHub planet:** add its name to `hiddenRepos` in `assets/live.js` and to `HIDDEN` in `scripts/fetch-live.mjs`.
+- **Description for a repo that has none on GitHub:** add it to `descriptions` in `assets/live.js` (or, better, set it on GitHub).
+- **YouTube channel:** found automatically from `@Raccoon_Team`. If that ever fails, add a repository variable `YT_CHANNEL_ID` (Settings → Secrets and variables → Actions → Variables).
+- **Music:** set `MUSIC_SRC` in `assets/app.js`. For the music planet to react to the actual beat, put the file in this repo (for example `assets/lofi.mp3`) and point `MUSIC_SRC` at it.
 
 ## Discord profile (live status, avatar, games, Spotify)
 
 1. Join the [Lanyard Discord server](https://discord.gg/lanyard) with your account. Lanyard is the free service that shares your presence.
 2. In Discord, go to Settings → Advanced and turn on Developer Mode. Then right-click your name and choose **Copy User ID**.
-3. Paste the ID into `DISCORD_USER_ID` in `index.html`.
+3. Paste the ID into `discordUserId` in `assets/live.js`.
 
-The live status is off until you do this. To turn it off again, set `DISCORD_USER_ID` back to `''`.
-
-The member counts on the Discord link come from the invite code in `DISCORD_INVITE`.
-
-## Music
-
-Set `MUSIC_SRC` in the script at the bottom of the page. The most reliable option is to commit an audio file (for example `lofi.mp3`) next to `index.html` and point `MUSIC_SRC` at it.
-
-## Avatar
-
-Your Discord avatar is used automatically once Discord is set up. Until then the page shows the letter `G`.
+The core of the world then glows in your status colour.
 
 ## Privacy
 
-The page does not show an age, an email address or a location. Add contact details only if you want them public.
+The site does not show an age, an email address or a location. Only public GitHub repos can appear.
