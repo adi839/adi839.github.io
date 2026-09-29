@@ -19,6 +19,9 @@ export const CONFIG = {
 
 const $ = (sel) => document.querySelector(sel);
 const SNOWFLAKE = /^\d{15,21}$/;
+const noop = () => {};
+// Other parts of the page (the room's screens) listen to the same data.
+const hooks = { onGithub: noop, onYoutube: noop, onServer: noop };
 
 export const el = (tag, className, text) => {
     const node = document.createElement(tag);
@@ -203,6 +206,7 @@ const renderGithub = ({ repos, events, followers }) => {
     };
     put('#steam-stats', 'Steam-switcher');
     put('#nexus-stats', 'nexustv-app');
+    hooks.onGithub({ repos: visible, events: normEvents(events) });
 };
 
 const loadGithub = async () => {
@@ -253,7 +257,7 @@ const playVideo = (id, title) => {
 
 const loadYoutube = async () => {
     let data;
-    try { data = await getJson('data/youtube.json'); } catch { return; }
+    try { data = await getJson('data/youtube.json'); } catch { hooks.onYoutube({ channel: null, videos: [] }); return; }
     const videos = (Array.isArray(data.videos) ? data.videos : []).filter((v) => /^[\w-]{11}$/.test(v.id || '')).slice(0, 6);
     const list = $('#yt-list');
     list.replaceChildren();
@@ -277,6 +281,7 @@ const loadYoutube = async () => {
     });
     if (videos.length) $('#yt-intro').textContent = 'My YouTube channel. Newest uploads, updated automatically:';
     if (data.channel && data.channel.title) $('#youtube-h').textContent = String(data.channel.title);
+    hooks.onYoutube({ channel: data.channel || null, videos });
 };
 
 /* ---------------- Discord ---------------- */
@@ -413,7 +418,7 @@ const renderPresence = (data, onPresence) => {
     $('#presence').hidden = false;
     tickPresence();
     const playing = activities.find((a) => a.type === 0);
-    onPresence({ status, playing: playing ? playing.name : null, spotify: data.listening_to_spotify ? data.spotify && data.spotify.song : null });
+    onPresence({ status, name: user.global_name || user.display_name || user.username, playing: playing ? String(playing.name) : null, spotify: data.listening_to_spotify ? data.spotify && data.spotify.song : null });
 };
 
 const startLanyard = (onPresence) => {
@@ -455,15 +460,22 @@ const loadServerStats = () => {
     if (!/^[\w-]+$/.test(CONFIG.discordInvite)) return;
     getJson(`https://discord.com/api/v10/invites/${CONFIG.discordInvite}?with_counts=true`)
         .then((invite) => {
-            if (invite.guild && invite.guild.name) $('#dc-server-name').textContent = invite.guild.name;
+            const name = invite.guild && invite.guild.name ? String(invite.guild.name) : null;
+            if (name) $('#dc-server-name').textContent = name;
             if (typeof invite.approximate_presence_count === 'number') {
-                $('#dc-server-sub').replaceChildren(el('span', 'live-dot'), `${compact.format(invite.approximate_presence_count)} online · ${compact.format(invite.approximate_member_count)} members`);
+                const online = compact.format(invite.approximate_presence_count);
+                const members = compact.format(invite.approximate_member_count);
+                $('#dc-server-sub').replaceChildren(el('span', 'live-dot'), `${online} online · ${members} members`);
+                hooks.onServer({ name, online, members });
+            } else if (name) {
+                hooks.onServer({ name, online: null, members: null });
             }
         })
         .catch(() => { /* keep the static text */ });
 };
 
-export function initLive({ onPresence = () => {} } = {}) {
+export function initLive({ onPresence = noop, onGithub = noop, onYoutube = noop, onServer = noop } = {}) {
+    Object.assign(hooks, { onGithub, onYoutube, onServer });
     loadGithub();
     loadYoutube();
     loadServerStats();

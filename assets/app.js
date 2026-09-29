@@ -1,23 +1,15 @@
 import { initLive } from './live.js';
+import * as sfx from './sfx.js';
 
-// Any direct link to an audio file works. For the music planet to pulse to the
+// Any direct link to an audio file works. For the boombox to pulse to the
 // beat, the file must live in this repo (e.g. 'assets/lofi.mp3').
 const MUSIC_SRC = 'https://drive.usercontent.google.com/download?id=182D-TYmwxlULAklHLEjTMsNYynROXTBn&export=download&confirm=t';
-
-const PLANETS = [
-    { id: 'nexustv', label: 'NexusTV', icon: '📺', color: 0x8b5cf6, shape: 'tv' },
-    { id: 'discord', label: 'Discord', icon: '💬', color: 0x5865f2, shape: 'torus' },
-    { id: 'youtube', label: 'YouTube', icon: '▶️', color: 0xff2d55, shape: 'play' },
-    { id: 'github', label: 'GitHub', icon: '🐙', color: 0x22d3ee, shape: 'octa' },
-    { id: 'steam', label: 'Steam Switcher', icon: '🛠️', color: 0x38bdf8, shape: 'knot' },
-    { id: 'music', label: 'Music', icon: '🎵', color: 0xf472b6, shape: 'ringed' },
-];
+const TOTAL_STARS = 10;
 
 const $ = (sel) => document.querySelector(sel);
 const html = document.documentElement;
 const is3d = () => html.dataset.view === '3d';
-const mobile = matchMedia('(max-width: 760px), (pointer: coarse)').matches;
-const finePointer = matchMedia('(hover: hover) and (pointer: fine)').matches;
+const touch = matchMedia('(pointer: coarse)').matches;
 
 const store = {
     get(key, fallback) { try { const v = localStorage.getItem(key); return v == null ? fallback : JSON.parse(v); } catch { return fallback; } },
@@ -27,74 +19,35 @@ const store = {
 /* ---------- Toast ---------- */
 const toastEl = $('#toast');
 let toastTimer;
-const toast = (message, ms = 2200) => {
+const toast = (message, ms = 2400) => {
     toastEl.textContent = message;
     toastEl.classList.add('is-visible');
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => toastEl.classList.remove('is-visible'), ms);
 };
 
-/* ---------- Panels ---------- */
-let world = null;
-let openId = null;
-let returnFocus = null;
-
-const panelFor = (id) => document.getElementById(`panel-${id}`);
-const setDockCurrent = (id) => document.querySelectorAll('.dock__btn').forEach((b) => b.setAttribute('aria-current', String(b.dataset.go === id)));
-
-const openPanel = (id, { from } = {}) => {
-    const panel = panelFor(id);
+/* ---------- Panels: in the room they move into windows, the phone and pop-ups ---------- */
+const content = $('#content');
+const panelOrder = [...content.querySelectorAll(':scope > .panel')].map((p) => p.id);
+const hosts = new Map();
+const panelEl = (id) => document.getElementById(`panel-${id}`);
+const mountPanel = (id, container, onEvict) => {
+    const panel = panelEl(id);
     if (!panel) return;
-    if (!is3d()) {
-        panel.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
-        return;
-    }
-    returnFocus = from || document.activeElement;
-    document.querySelectorAll('.panel.is-active').forEach((p) => p.classList.remove('is-active'));
-    panel.classList.add('is-active');
-    openId = id;
-    html.classList.add('sheet-open');
-    $('#content').scrollTop = 0;
-    setDockCurrent(id);
-    if (world) { if (id === 'about') world.reset(); else world.focus(id); }
-    const heading = panel.querySelector('h2');
-    if (heading) { heading.tabIndex = -1; heading.focus({ preventScroll: true }); }
-    hideHint();
+    const prev = hosts.get(id);
+    hosts.set(id, { container, onEvict });
+    if (prev && prev.container !== container && prev.onEvict) prev.onEvict();
+    container.append(panel);
 };
-
-const closePanel = () => {
-    if (!openId) return;
-    openId = null;
-    html.classList.remove('sheet-open');
-    setDockCurrent(null);
-    if (world) world.unfocus();
-    if (returnFocus && returnFocus.focus && document.contains(returnFocus)) returnFocus.focus({ preventScroll: true });
-};
-
-const insetForSheet = () => {
-    if (!openId) return { right: 0, bottom: 0 };
-    const box = $('#content').getBoundingClientRect();
-    if (window.innerWidth <= 760) return { right: 0, bottom: window.innerHeight - box.top };
-    return { right: window.innerWidth - box.left, bottom: 0 };
-};
-
-$('#close-btn').addEventListener('click', closePanel);
-$('#home-btn').addEventListener('click', (e) => openPanel('about', { from: e.currentTarget }));
-document.querySelectorAll('[data-go]').forEach((btn) => btn.addEventListener('click', () => openPanel(btn.dataset.go, { from: btn })));
-
-/* ---------- Hint ---------- */
-const hint = $('#hint');
-let hintTimer;
-const hideHint = () => { clearTimeout(hintTimer); hint.classList.add('is-gone'); };
-const showHint = () => {
-    if (store.get('hinted', false)) return;
-    store.set('hinted', true);
-    hint.classList.remove('is-gone');
-    hintTimer = setTimeout(hideHint, 7000);
+const unmountPanel = (id) => {
+    const panel = panelEl(id);
+    if (!panel) return;
+    hosts.delete(id);
+    const after = panelOrder.slice(panelOrder.indexOf(panel.id) + 1).map((pid) => document.getElementById(pid)).find((p) => p && p.parentNode === content);
+    content.insertBefore(panel, after || null);
 };
 
 /* ---------- Star hunt ---------- */
-const TOTAL_STARS = 10;
 let starsFound = store.get('stars', []).filter((n) => Number.isInteger(n) && n >= 0 && n < TOTAL_STARS);
 const renderStars = () => {
     const n = starsFound.length;
@@ -102,23 +55,12 @@ const renderStars = () => {
     $('#stars-bar').style.setProperty('--p', String(n / TOTAL_STARS));
     $('#stars-text').textContent = n >= TOTAL_STARS
         ? 'All 10 stars found. Legend.'
-        : n === 0 ? '10 stars are hidden around the world. Find them all.' : `${n} of 10 stars found. ${TOTAL_STARS - n} to go.`;
+        : n === 0 ? '10 stars are hidden around the room. Find them all.' : `${n} of 10 stars found. ${TOTAL_STARS - n} to go.`;
     $('#trophy').hidden = n < TOTAL_STARS;
     $('#stars-hud').classList.toggle('is-complete', n >= TOTAL_STARS);
+    $('#menu-stars').textContent = `Stars ${n}/10`;
 };
 renderStars();
-const onStar = (index) => {
-    if (!starsFound.includes(index)) starsFound.push(index);
-    store.set('stars', starsFound);
-    renderStars();
-    hideHint();
-    if (starsFound.length >= TOTAL_STARS) {
-        toast('🏆 All 10 stars! The world turns gold. GG!', 4000);
-        world && world.setGolden(true, true);
-    } else {
-        toast(`★ Star ${starsFound.length}/10 found!`);
-    }
-};
 
 /* ---------- Music ---------- */
 const audio = new Audio();
@@ -130,8 +72,7 @@ const musicBtn = $('#music-btn');
 const playBtn = $('#play');
 const musicStatus = $('#music-status');
 const viz = $('#viz');
-const BARS = 24;
-for (let i = 0; i < BARS; i++) viz.append(document.createElement('i'));
+for (let i = 0; i < 24; i++) viz.append(document.createElement('i'));
 const vizBars = [...viz.children];
 
 let musicState = 'idle';
@@ -142,6 +83,7 @@ const MUSIC_TEXT = {
     paused: 'Paused',
     error: "Couldn't load the music. Tap to retry.",
 };
+const musicListeners = [];
 const setMusic = (next) => {
     musicState = next;
     musicPanel.dataset.music = next;
@@ -151,6 +93,7 @@ const setMusic = (next) => {
     playBtn.setAttribute('aria-label', on ? 'Pause music' : 'Play music');
     musicBtn.setAttribute('aria-label', on ? 'Pause music (M)' : 'Play music (M)');
     musicStatus.textContent = MUSIC_TEXT[next];
+    musicListeners.forEach((fn) => fn(next));
 };
 
 let analyser = null;
@@ -173,6 +116,7 @@ const setupAnalyser = () => {
 };
 
 const toggleMusic = async () => {
+    sfx.unlock();
     if (musicState === 'playing' || musicState === 'loading') {
         audio.pause();
         setMusic('paused');
@@ -193,7 +137,7 @@ audio.addEventListener('error', () => { if (musicState !== 'idle') setMusic('err
 musicBtn.addEventListener('click', toggleMusic);
 playBtn.addEventListener('click', toggleMusic);
 
-// A 0..1 "loudness" that drives the visualiser and the music planet.
+// A 0..1 "loudness" that drives the visualiser, the boombox and the lights.
 let level = 0;
 const readLevel = () => {
     if (musicState !== 'playing') { level += (0 - level) * 0.1; return level; }
@@ -212,7 +156,7 @@ const readLevel = () => {
 };
 const drawViz = () => {
     const lv = readLevel();
-    if (!document.hidden && (!is3d() || openId === 'music')) {
+    if (!document.hidden && musicPanel.offsetParent) {
         const t = performance.now() / 1000;
         vizBars.forEach((bar, i) => {
             let v;
@@ -252,20 +196,21 @@ document.querySelectorAll('[data-copy]').forEach((btn) => {
         timer = setTimeout(() => btn.classList.remove('is-done'), 1600);
     });
 });
-$('#share').addEventListener('click', async () => {
+const share = async () => {
     const url = location.origin + location.pathname;
     if (navigator.share) {
-        try { await navigator.share({ title: document.title, text: "Explore Gabytzu's 3D world", url }); } catch { /* closed */ }
+        try { await navigator.share({ title: document.title, text: "Come see Gabytzu's room in 3D", url }); } catch { /* closed */ }
         return;
     }
     toast(await copyText(url) ? 'Link copied 🔗' : "Couldn't copy the link");
-});
+};
+$('#share').addEventListener('click', share);
 
 /* ---------- View switch ---------- */
 const viewBtn = $('#view-btn');
 const syncViewBtn = () => {
     viewBtn.textContent = is3d() ? '2D' : '3D';
-    viewBtn.setAttribute('aria-label', is3d() ? 'Switch to classic view' : 'Switch to 3D world');
+    viewBtn.setAttribute('aria-label', is3d() ? 'Switch to the classic page' : 'Switch to the 3D room');
     viewBtn.title = viewBtn.getAttribute('aria-label');
 };
 syncViewBtn();
@@ -281,71 +226,482 @@ viewBtn.addEventListener('click', () => switchView(is3d() ? 'classic' : '3d'));
 const pendingToast = sessionStorage.getItem('toast');
 if (pendingToast) { sessionStorage.removeItem('toast'); setTimeout(() => toast(pendingToast, 3500), 400); }
 
-/* ---------- Keyboard ---------- */
-document.addEventListener('keydown', (e) => {
-    if (e.metaKey || e.ctrlKey || e.altKey || e.target.closest('input, textarea, [contenteditable]')) return;
-    const key = (e.key || '').toLowerCase();
-    if (key === 'escape' && openId) { e.preventDefault(); closePanel(); return; }
-    if (e.repeat) return;
-    if (key === 'm') { toggleMusic(); return; }
-    if (key === 'r' && is3d()) { closePanel(); world && world.reset(); return; }
-    const n = Number(key);
-    if (n >= 1 && n <= PLANETS.length) openPanel(PLANETS[n - 1].id);
+/* ---------- Live data ---------- */
+let repos = [];
+let screens = null;       // GabyOS, the dashboard and the TV (room only)
+let room = null;
+let phoneNote = '';
+// The latest of each, so the room's screens can catch up when they are built.
+const latest = { presence: null, github: null, youtube: null, server: null };
+const setPhoneNote = (text) => { phoneNote = text; if (room) room.setPhoneNote(text); };
+const show = {
+    presence(p) {
+        screens.dash.setPresence(p);
+        screens.os.setStatus(p.status === 'offline' ? 'Offline' : 'Online', p.status);
+        setPhoneNote(p.playing ? `Playing ${p.playing}` : `Gabytzu is ${p.status}`);
+    },
+    github(data) { screens.dash.setEvents(data.events); },
+    youtube({ channel, videos }) {
+        screens.tv.setChannel(channel);
+        screens.tv.setVideos(videos);
+        screens.dash.setVideo(videos[0]);
+    },
+    server({ name, online, members }) {
+        screens.dash.setServer({ name, online, members });
+        if (!latest.presence && online) {
+            screens.os.setStatus(`${online} online`, 'online');
+            setPhoneNote(`${online} online in ${name || 'the server'}`);
+        }
+    },
+};
+const receive = (kind) => (data) => {
+    latest[kind] = data;
+    if (kind === 'github') repos = data.repos;
+    if (screens) show[kind](data);
+};
+initLive({ onPresence: receive('presence'), onGithub: receive('github'), onYoutube: receive('youtube'), onServer: receive('server') });
+
+/* ======================================================================= the room */
+const start = $('#start');
+const startGo = $('#start-go');
+const startBar = $('#start-bar');
+const startStatus = $('#start-status');
+const menu = $('#menu');
+const modal = $('#modal');
+const modalBody = $('#modal-body');
+const prompt = $('#prompt');
+const promptText = $('#prompt-text');
+const promptKey = prompt.querySelector('.prompt__key');
+const usebar = $('#usebar');
+const usebarText = $('#usebar-text');
+const walkHint = $('#walk-hint');
+const joystick = $('#joystick');
+const flatBox = $('#flat');
+// Phones and small windows use the PC and the TV full screen instead of on the 3D screen.
+const wantFlat = () => touch || window.innerWidth < 900 || window.innerHeight < 520;
+
+let menuOpenedAt = 0;
+let everLocked = false;
+let hintTimer;
+const showHint = (text, ms = 0) => {
+    clearTimeout(hintTimer);
+    walkHint.textContent = text;
+    walkHint.hidden = !text;
+    if (ms) hintTimer = setTimeout(() => { walkHint.hidden = true; }, ms);
+};
+
+// Keep the HUD bits (crosshair, prompt, hints) in step with what the player is doing.
+const syncWalkUi = () => {
+    if (!room) return;
+    const walking = (room.mode === 'walk' || room.mode === 'armchair') && menu.hidden && modal.hidden;
+    const locked = room.isLocked();
+    html.classList.toggle('is-walking', walking && (locked || touch));
+    html.classList.toggle('is-dragmode', walking && !touch && room.dragMode);
+    joystick.hidden = !(walking && touch && room.mode === 'walk');
+    if (!walking) { prompt.hidden = true; showHint(''); return; }
+    if (!touch && !room.dragMode && !locked) showHint('Click to look around · Esc for the menu');
+    else if (walkHint.textContent.startsWith('Click')) showHint('');
+    promptKey.textContent = locked ? 'E' : 'Click';
+    const target = room.target;
+    if (target) promptText.textContent = target.label;
+    prompt.hidden = !target || !(locked || touch || room.dragMode);
+};
+
+const openMenu = () => {
+    if (!room || !menu.hidden || !start.classList.contains('is-gone')) return;
+    closeModal({ quiet: true });
+    menu.hidden = false;
+    menuOpenedAt = performance.now();
+    room.pause(true);
+    room.unlock();
+    syncWalkUi();
+    $('#menu-resume').focus({ preventScroll: true });
+};
+const closeMenu = ({ relock = true } = {}) => {
+    if (menu.hidden) return;
+    menu.hidden = true;
+    room.pause(false);
+    if (relock && !touch && !room.dragMode) room.lock();
+    syncWalkUi();
+};
+
+let modalPanel = null;
+const openModal = (panelId, kind = 'card') => {
+    closeModal({ quiet: true });
+    modal.dataset.kind = kind;
+    modalPanel = panelId;
+    mountPanel(panelId, modalBody, () => { if (modalPanel === panelId) closeModal({ quiet: true, keep: true }); });
+    modal.hidden = false;
+    if (kind === 'phone') $('#phone-time').textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    if (room) { room.pause(true); room.unlock(); }
+    modalBody.scrollTop = 0;
+    $('#modal-close').focus({ preventScroll: true });
+    syncWalkUi();
+};
+function closeModal({ quiet = false, keep = false, relock = false } = {}) {
+    if (modal.hidden) return;
+    modal.hidden = true;
+    if (modalPanel && !keep) unmountPanel(modalPanel);
+    modalPanel = null;
+    if (room) {
+        room.pause(false);
+        if (relock && !touch && !room.dragMode) room.lock();
+    }
+    if (!quiet) syncWalkUi();
+}
+$('#modal-close').addEventListener('click', () => closeModal({ relock: true }));
+$('.phone-dock').addEventListener('click', (e) => {
+    const app = e.target.closest('[data-phone]');
+    if (!app) return;
+    if (app.dataset.phone === 'music') { toggleMusic(); return; }
+    closeModal({ quiet: true });
+    act(app.dataset.phone);
+    syncWalkUi();
+});
+modal.addEventListener('click', (e) => { if (e.target === modal) closeModal({ relock: true }); });
+
+// While sitting at the PC or the TV, its page leaves the 3D screen: on phones it
+// fills the display, elsewhere it is laid flat exactly over the 3D screen (sharp
+// text, and clicks work the same in every browser).
+const dockBox = $('#dock-screen');
+let presented = null;
+const screenApi = (key) => (key === 'pc' ? screens.os : screens.tv);
+const layoutDock = () => {
+    if (!presented || presented.where !== 'dock') return;
+    const r = room.screenRect(presented.key);
+    const [pw, ph] = r.px;
+    Object.assign(dockBox.style, {
+        left: `${r.left}px`,
+        top: `${r.top}px`,
+        width: `${pw}px`,
+        height: `${ph}px`,
+        transform: `scale(${r.width / pw}, ${r.height / ph})`,
+    });
+};
+const present = (key) => {
+    const flat = wantFlat();
+    const box = flat ? flatBox : dockBox;
+    box.replaceChildren(screenApi(key).root);
+    presented = { key, where: flat ? 'flat' : 'dock' };
+    if (flat) {
+        html.classList.toggle('flat-os', key === 'pc');
+        screenApi(key).setFlat(true);
+    } else {
+        layoutDock();
+    }
+    box.hidden = false;
+};
+const unpresent = () => {
+    if (!presented) return;
+    const { key, where } = presented;
+    presented = null;
+    // an iframe restarts when it moves, so a playing video stops with you
+    if (key === 'tv') screens.tv.stop();
+    if (where === 'flat') {
+        screenApi(key).setFlat(false);
+        flatBox.hidden = true;
+        html.classList.remove('flat-os');
+    } else {
+        dockBox.hidden = true;
+    }
+    room.screen(key).append(screenApi(key).root);
+};
+window.addEventListener('resize', () => {
+    if (!presented) return;
+    const { key, where } = presented;
+    if ((where === 'flat') !== wantFlat()) { unpresent(); present(key); } else requestAnimationFrame(layoutDock);
 });
 
-/* ---------- Live data ---------- */
-let lastStatus = null;
-initLive({ onPresence: ({ status }) => { lastStatus = status; if (world) world.setStatus(status); } });
+const standUp = (gesture) => {
+    if (!room || !['pc', 'tv', 'armchair'].includes(room.mode)) return;
+    unpresent();
+    room.standUp();
+    if (gesture && !touch && !room.dragMode) room.lock();
+};
+$('#usebar-exit').addEventListener('click', () => standUp(true));
 
-/* ---------- 3D world ---------- */
-const loader = $('#loader');
-const finishLoading = () => loader.classList.add('is-done');
+const takePhoto = () => {
+    const flash = $('#flash');
+    flash.classList.remove('is-on');
+    void flash.offsetWidth;
+    flash.classList.add('is-on');
+    try {
+        const url = room.snapshot();
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'gabytzu-room.jpg';
+        document.body.append(a);
+        a.click();
+        a.remove();
+        toast('📸 Photo saved');
+    } catch {
+        toast('📸 Say cheese!');
+    }
+};
 
+const FUN = {
+    plant: '🌿 The plant says hi',
+    bottle: '💧 Stay hydrated!',
+    car: '🏎️ Vroom vroom',
+    pouf: 'So soft ☁️',
+    neon: '✨ New neon colour',
+    trophy: '🏆 Star Collector: all 10 stars found!',
+};
+const onInteract = (id) => {
+    switch (id) {
+        case 'phone': openModal('discord', 'phone'); break;
+        case 'boombox': {
+            const wasOn = musicState === 'playing' || musicState === 'loading';
+            toggleMusic();
+            toast(wasOn ? '⏸ Music paused' : '🎵 Lofi beats');
+            break;
+        }
+        case 'door': openModal('about'); toast('🚪 Knock knock! Come find me online'); break;
+        case 'poster-nexustv': openModal('nexustv'); break;
+        case 'poster-steam': openModal('steam'); break;
+        case 'camera': takePhoto(); break;
+        case 'window': toast(room.isNight() ? '🌙 Night falls' : '☀️ Good morning'); break;
+        default: if (FUN[id]) toast(FUN[id]);
+    }
+};
+
+const act = (name) => {
+    if (!room) return;
+    switch (name) {
+        case 'pc': case 'tv':
+            if (room.mode === 'pc' || room.mode === 'tv') { if (room.mode !== name) { unpresent(); room.standUp().then(() => room.use(name)); } return; }
+            room.use(name);
+            break;
+        case 'phone': openModal('discord', 'phone'); break;
+        case 'about': openModal('about'); break;
+        case 'boombox': room.use('boombox'); break;
+        case 'switch': case 'window': room.use(name); break;
+        case 'stars': toast(starsFound.length >= TOTAL_STARS ? '🏆 All 10 stars found!' : `★ ${starsFound.length}/10. Look on shelves, under things and up high`, 3200); break;
+        default:
+    }
+};
+
+menu.addEventListener('click', (e) => {
+    const go = e.target.closest('[data-act]');
+    if (!go) return;
+    const name = go.dataset.act;
+    // seats and pop-ups keep the mouse free; quick toggles go straight back to walking
+    closeMenu({ relock: ['boombox', 'switch', 'window', 'stars'].includes(name) });
+    act(name);
+});
+$('#menu-resume').addEventListener('click', () => closeMenu());
+$('#menu-classic').addEventListener('click', () => switchView('classic'));
+$('#menu-share').addEventListener('click', share);
+$('#menu-btn').addEventListener('click', () => (menu.hidden ? openMenu() : closeMenu({ relock: false })));
+$('#home-btn').addEventListener('click', () => { if (is3d() && room) openModal('about'); else panelEl('about').scrollIntoView({ behavior: 'smooth' }); });
+prompt.addEventListener('click', () => { if (room) room.useTarget(); });
+// Clicking the room grabs the mouse again (browsers only allow that on a click).
+$('#scene').addEventListener('click', () => {
+    if (!room || touch || room.dragMode || room.isLocked() || !start.classList.contains('is-gone')) return;
+    if ((room.mode === 'walk' || room.mode === 'armchair') && menu.hidden && modal.hidden) room.lock();
+});
+// Focus moving inside a 3D screen must never scroll it out of line with the room.
+['#css3d', '#os', '#dash', '#tvui'].forEach((sel) => {
+    const node = $(sel);
+    node.addEventListener('scroll', () => { if (node.scrollTop || node.scrollLeft) { node.scrollTop = 0; node.scrollLeft = 0; } });
+});
+
+/* settings */
+const qualitySel = $('#set-quality');
+const sensInput = $('#set-sens');
+const sfxInput = $('#set-sfx');
+const dragInput = $('#set-drag');
+const savedQuality = store.get('quality', 'auto');
+qualitySel.value = savedQuality;
+sensInput.value = String(store.get('sens', 1));
+sfxInput.checked = sfx.isEnabled();
+dragInput.checked = store.get('drag', false);
+qualitySel.addEventListener('change', () => {
+    store.set('quality', qualitySel.value);
+    sessionStorage.setItem('toast', 'Graphics updated');
+    location.reload();
+});
+sensInput.addEventListener('input', () => { store.set('sens', Number(sensInput.value)); if (room) room.setSensitivity(Number(sensInput.value)); });
+sfxInput.addEventListener('change', () => sfx.setEnabled(sfxInput.checked));
+dragInput.addEventListener('change', () => {
+    store.set('drag', dragInput.checked);
+    if (room) room.dragMode = dragInput.checked;
+});
+
+/* keyboard */
+document.addEventListener('keydown', (e) => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    const key = (e.key || '').toLowerCase();
+    const typing = e.target.closest && e.target.closest('input, textarea, select, [contenteditable]');
+    if (key === 'escape') {
+        if (!modal.hidden) { e.preventDefault(); closeModal(); return; }
+        if (room && (room.mode === 'pc' || room.mode === 'tv')) { e.preventDefault(); standUp(false); return; }
+        if (!menu.hidden) { if (performance.now() - menuOpenedAt > 450) closeMenu({ relock: false }); return; }
+        if (room && start.classList.contains('is-gone') && (room.mode === 'walk' || room.mode === 'armchair') && !room.isLocked()) openMenu();
+        return;
+    }
+    if (typing || e.repeat) return;
+    if (key === 'm') { toggleMusic(); return; }
+    if (!room || !start.classList.contains('is-gone') || !menu.hidden || !modal.hidden) return;
+    if (room.mode !== 'walk' && room.mode !== 'armchair') return;
+    if (key === 'e' || key === 'f') {
+        if (room.target) room.useTarget();
+        else if (room.mode === 'armchair') standUp(true);
+        return;
+    }
+    const quick = { 1: 'pc', 2: 'tv', 3: 'phone', 4: 'boombox', 5: 'switch', 6: 'window' }[key];
+    if (quick) act(quick);
+});
+
+/* ---------- Start the room ---------- */
 const fallBackToClassic = (message) => {
     html.dataset.view = 'classic';
-    html.classList.remove('sheet-open');
-    finishLoading();
+    [...hosts.keys()].forEach(unmountPanel);
+    closeModal({ quiet: true });
+    menu.hidden = true;
+    usebar.hidden = true;
+    prompt.hidden = true;
+    joystick.hidden = true;
+    walkHint.hidden = true;
+    flatBox.hidden = true;
+    dockBox.hidden = true;
+    html.classList.remove('is-walking', 'has-target', 'is-dragmode', 'flat-os');
     syncViewBtn();
-    if (message) toast(message, 3500);
+    if (message) toast(message, 4000);
+};
+
+const pickQuality = () => {
+    const q = store.get('quality', 'auto');
+    if (q === 'low' || q === 'medium' || q === 'high') return q;
+    return touch ? 'low' : 'medium';
+};
+
+const bootRoom = async () => {
+    const [{ createRoom }, { createOS, createDash, createTV }] = await Promise.all([import('./room/index.js'), import('./os.js')]);
+    screens = {
+        os: createOS($('#os'), {
+            mount: mountPanel,
+            unmount: unmountPanel,
+            actions: {
+                standUp: () => standUp(true),
+                lights: (on) => { if (room.lightsOn() !== on) room.use('switch'); },
+                night: (on) => { if (room.isNight() !== on) room.use('window'); },
+                neon: () => room.cycleNeon(),
+                music: toggleMusic,
+                tv: () => act('tv'),
+                disco: () => room.disco(),
+            },
+            info: { repos: () => repos, stars: () => starsFound.length },
+        }),
+        dash: createDash($('#dash')),
+        tv: createTV($('#tvui')),
+    };
+    musicListeners.push((state) => {
+        screens.os.setMusic(state === 'playing');
+        screens.dash.setMusic(state);
+    });
+    screens.dash.setMusic(musicState);
+    Object.entries(latest).forEach(([kind, data]) => { if (data) show[kind](data); });
+
+    const hour = new Date().getHours();
+    room = await createRoom({
+        canvas: $('#scene'),
+        cssLayer: $('#css3d'),
+        screens: { pc: $('#os'), side: $('#dash'), tv: $('#tvui') },
+        joystick,
+        touch,
+        quality: pickQuality(),
+        night: hour < 7 || hour >= 20,
+        collected: starsFound,
+        onProgress: (p) => {
+            startBar.style.setProperty('--p', p.toFixed(3));
+            startStatus.textContent = `Loading the room… ${Math.round(p * 100)}%`;
+        },
+        onTarget: (t) => {
+            html.classList.toggle('has-target', !!t);
+            if (t) promptText.textContent = t.label;
+            prompt.hidden = !t || !html.classList.contains('is-walking') && !html.classList.contains('is-dragmode');
+        },
+        onInteract,
+        onMode: (mode, next) => {
+            usebar.hidden = true;
+            if (mode === 'pc' || mode === 'tv') {
+                usebarText.textContent = mode === 'pc' ? 'Using the PC' : 'Watching TV';
+                usebar.hidden = false;
+                present(mode);
+                if (mode === 'pc') {
+                    screens.os.wake();
+                    screens.os.root.focus({ preventScroll: true });
+                }
+            } else if (mode === 'armchair') {
+                usebarText.textContent = 'Sitting in the armchair';
+                usebar.hidden = false;
+            }
+            if (mode === 'flying' && next === 'pc' && !wantFlat()) showHint('');
+            syncWalkUi();
+        },
+        onLock: (locked, info = {}) => {
+            if (locked) {
+                everLocked = true;
+                if (!menu.hidden) closeMenu({ relock: false });
+            } else if (info.error) {
+                // Refused right after Esc is normal; refused from the start means
+                // this browser (or an embed) doesn't allow it, so drag instead.
+                if (!everLocked) {
+                    room.dragMode = true;
+                    toast('Drag with the mouse to look around', 3000);
+                }
+            } else if (!info.expected && modal.hidden && (room.mode === 'walk' || room.mode === 'armchair')) {
+                openMenu();
+            }
+            syncWalkUi();
+        },
+        onStar: (index) => {
+            if (!starsFound.includes(index)) starsFound.push(index);
+            store.set('stars', starsFound);
+            renderStars();
+            if (starsFound.length >= TOTAL_STARS) {
+                toast('🏆 All 10 stars! A trophy appeared on the shelf. GG!', 4500);
+                room.setGolden(true);
+                sfx.fanfare();
+            } else {
+                toast(`★ Star ${starsFound.length}/10 found!`);
+            }
+        },
+        onFps: (fps) => {
+            if (fps < 14 && room && room.mode === 'walk' && pickQuality() !== 'low' && !store.get('slowTip', false)) {
+                store.set('slowTip', true);
+                toast('Running slow? Menu → Graphics → Low', 4000);
+            }
+        },
+        isMusicOn: () => musicState === 'playing' || musicState === 'loading',
+        getLevel: () => level,
+    });
+    room.setSensitivity(Number(sensInput.value));
+    room.dragMode = dragInput.checked;
+    if (phoneNote) room.setPhoneNote(phoneNote);
+    window.__room = room;
+
+    $('#scene').addEventListener('room:lost', () => fallBackToClassic('The 3D room stopped (graphics reset), here is the classic page.'));
+    startGo.disabled = false;
+    startStatus.textContent = touch ? 'Ready! Tap to enter.' : 'Ready! Click to enter.';
+    start.classList.add('is-loaded');
+    startGo.focus({ preventScroll: true });
 };
 
 if (is3d()) {
-    const safety = setTimeout(() => fallBackToClassic("The 3D world didn't load, showing the classic view."), 15000);
-    import('./world.js')
-        .then(({ createWorld }) => {
-            const container = $('#world');
-            container.addEventListener('world:frame', () => { clearTimeout(safety); finishLoading(); }, { once: true });
-            world = createWorld({
-                canvas: $('#scene'),
-                container,
-                planets: PLANETS,
-                starsFound,
-                golden: starsFound.length >= TOTAL_STARS,
-                mobile,
-                trail: finePointer,
-                onSelect: (id) => openPanel(id),
-                onStar,
-                onCore: (taps) => {
-                    hideHint();
-                    if (taps === 1) toast(['GG! 🎮', '+100 XP ⚡', 'Combo x2 🔥', 'Nice click 😎'][Math.floor(Math.random() * 4)]);
-                    if (taps === 0) toast('💥 Core overload!');
-                },
-                onReady: showHint,
-                onSlow: (fps) => {
-                    if (html.dataset.forced) return;
-                    switchView('classic', `Your device ran the 3D world at ${Math.round(fps)} fps, so here's the classic view. You can switch back with the 3D button.`);
-                },
-                getLevel: () => level,
-                getInset: insetForSheet,
-            });
-            if (lastStatus) world.setStatus(lastStatus);
-            window.__world = world;
-        })
-        .catch((err) => {
-            console.error('3D world failed:', err);
-            clearTimeout(safety);
-            fallBackToClassic("The 3D world didn't load, showing the classic view.");
+    startGo.addEventListener('click', () => {
+        if (!room) return;
+        sfx.unlock();
+        start.classList.add('is-gone');
+        room.enter().then(() => {
+            syncWalkUi();
+            if (touch) showHint('Drag to look · use the stick to walk · tap things to use them', 6500);
         });
-} else {
-    finishLoading();
+        if (!touch && !room.dragMode) room.lock();
+    });
+    bootRoom().catch((err) => {
+        console.error('3D room failed:', err);
+        fallBackToClassic("The 3D room didn't load, here is the classic page.");
+    });
 }
