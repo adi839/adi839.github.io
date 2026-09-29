@@ -1,9 +1,98 @@
 {
-  "followers": null,
+  "generated_at": "2026-09-29T17:02:32.487Z",
+  "followers": 0,
   "repos": [
-    { "name": "nexustv-app", "description": "", "language": "", "stars": 0, "url": "https://github.com/adi839/nexustv-app", "homepage": "", "updated": "2026-09-27T18:14:37Z" },
-    { "name": "Music-Player", "description": "", "language": "", "stars": 0, "url": "https://github.com/adi839/Music-Player", "homepage": "", "updated": "2026-09-09T20:00:31Z" },
-    { "name": "Steam-switcher", "description": "", "language": "Python", "stars": 0, "url": "https://github.com/adi839/Steam-switcher", "homepage": "", "updated": "2026-01-07T06:23:42Z" }
+    {
+      "name": "nexustv-app",
+      "description": "",
+      "language": "",
+      "stars": 0,
+      "url": "https://github.com/adi839/nexustv-app",
+      "homepage": "",
+      "updated": "2026-09-27T18:14:37Z",
+      "size": 0
+    },
+    {
+      "name": "Music-Player",
+      "description": "",
+      "language": "",
+      "stars": 0,
+      "url": "https://github.com/adi839/Music-Player",
+      "homepage": "",
+      "updated": "2026-09-09T20:00:31Z",
+      "size": 81434
+    },
+    {
+      "name": "Steam-switcher",
+      "description": "",
+      "language": "Python",
+      "stars": 0,
+      "url": "https://github.com/adi839/Steam-switcher",
+      "homepage": "",
+      "updated": "2026-01-07T06:23:42Z",
+      "size": 14
+    }
   ],
-  "events": []
+  "events": [
+    {
+      "text": "Released a new version of nexustv-app",
+      "date": "2026-09-27T18:14:37Z",
+      "repo": "adi839/nexustv-app"
+    },
+    {
+      "text": "Released a new version of nexustv-app",
+      "date": "2026-09-27T07:06:12Z",
+      "repo": "adi839/nexustv-app"
+    },
+    {
+      "text": "Released a new version of nexustv-app",
+      "date": "2026-09-26T17:18:30Z",
+      "repo": "adi839/nexustv-app"
+    },
+    {
+      "text": "Created branch main in nexustv-app",
+      "date": "2026-09-24T11:18:53Z",
+      "repo": "adi839/nexustv-app"
+    },
+    {
+      "text": "Released a new version of nexustv-app",
+      "date": "2026-09-24T12:22:30Z",
+      "repo": "adi839/nexustv-app"
+    },
+    {
+      "text": "Released a new version of nexustv-app",
+      "date": "2026-09-24T11:45:35Z",
+      "repo": "adi839/nexustv-app"
+    },
+    {
+      "text": "Released a new version of nexustv-app",
+      "date": "2026-09-24T11:33:54Z",
+      "repo": "adi839/nexustv-app"
+    },
+    {
+      "text": "Released a new version of nexustv-app",
+      "date": "2026-09-24T11:19:04Z",
+      "repo": "adi839/nexustv-app"
+    },
+    {
+      "text": "Created branch mara in Music-Player",
+      "date": "2026-09-09T20:00:24Z",
+      "repo": "adi839/Music-Player"
+    },
+    {
+      "text": "Created branch main in Music-Player",
+      "date": "2026-09-09T19:39:58Z",
+      "repo": "adi839/Music-Player"
+    },
+    {
+      "text": "Created branch main in Music-Player",
+      "date": "2026-09-09T20:00:31Z",
+      "repo": "adi839/Music-Player"
+    },
+    {
+      "text": "Created branch master in Music-Player",
+      "date": "2026-09-09T19:58:00Z",
+      "repo": "adi839/Music-Player"
+    }
+  ]
 }
