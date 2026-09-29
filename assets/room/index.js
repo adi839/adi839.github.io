@@ -10,6 +10,7 @@ import { CSS3DRenderer, CSS3DObject } from 'three/addons/renderers/CSS3DRenderer
 import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
 import { buildRoom, placeModels, SCREENS } from './build.js';
 import { createControls } from './controls.js';
+import { poster } from './textures.js';
 import * as sfx from '../sfx.js';
 
 const ROOT = new URL('../../', import.meta.url);
@@ -57,6 +58,7 @@ export async function createRoom({
     onLock = () => {},
     onStar = () => {},
     onFps = () => {},
+    onSlow = () => {},
     isMusicOn = () => false,
     getLevel = () => 0,
 }) {
@@ -65,13 +67,17 @@ export async function createRoom({
     renderer.setClearColor(0x000000, 0);
     renderer.toneMapping = THREE.AgXToneMapping;
     renderer.toneMappingExposure = 1.12;
-    renderer.shadowMap.enabled = true;
+    // Low has no shadow maps at all (the soft contact shadows under furniture stay).
+    renderer.shadowMap.enabled = quality !== 'low';
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.shadowMap.autoUpdate = false;
-    RectAreaLightUniformsLib.init();
+    if (quality === 'high') RectAreaLightUniformsLib.init();
 
-    const maxRatio = { high: 1.75, medium: 1.3, low: 1 }[quality] || 1.3;
-    let pixelRatio = Math.min(window.devicePixelRatio || 1, maxRatio);
+    // Sharpness is the biggest cost on big/high-DPI screens: start modest and let
+    // the adaptive scaling below go up (or down) from there.
+    const maxRatio = Math.min(window.devicePixelRatio || 1, { high: 1.5, medium: 1, low: 0.85 }[quality] || 1);
+    const minRatio = 0.5;
+    let pixelRatio = maxRatio;
     renderer.setPixelRatio(pixelRatio);
 
     const scene = new THREE.Scene();
@@ -156,7 +162,8 @@ export async function createRoom({
         const hole = new THREE.Mesh(new THREE.PlaneGeometry(spec.w, spec.h), room.M.hole);
         hole.position.z = 0.0004;
         room.screens[key].add(hole);
-        screenObjects[key] = { obj, wrap, hole };
+        const sphere = new THREE.Sphere(new THREE.Vector3().setFromMatrixPosition(group.matrixWorld), Math.hypot(spec.w, spec.h) / 2 + 0.05);
+        screenObjects[key] = { obj, wrap, hole, sphere };
     }
 
     // the phone's lock screen is a small canvas texture
@@ -225,11 +232,14 @@ export async function createRoom({
         if (on ? nightTex : dayTex) scene.background = on ? nightTex : dayTex;
         scene.backgroundIntensity = on ? 0.9 : 1.2;
         scene.backgroundRotation.set(0, on ? 0 : -0.35, 0);
-        scene.environmentIntensity = on ? 0.06 : 0.55;
+        // without the window's area light (Low/Medium) the sky map fills in a bit more
+        scene.environmentIntensity = on ? 0.06 : (lights.sky ? 0.55 : 0.72);
         lights.sun.color.set(on ? 0x9db4ff : 0xffd6a8);
         lights.sun.intensity = on ? 0.35 : 10;
-        lights.sky.color.set(on ? 0x5d74b8 : 0xd4e4ff);
-        lights.sky.intensity = on ? 0.3 : 2.4;
+        if (lights.sky) {
+            lights.sky.color.set(on ? 0x5d74b8 : 0xd4e4ff);
+            lights.sky.intensity = on ? 0.3 : 2.4;
+        }
         if (sound) sfx.whoosh();
     };
     const setLights = (on) => {
@@ -243,6 +253,7 @@ export async function createRoom({
         if (lights.lamp) lights.lamp.intensity = on ? 1.4 : 0;
         if (anim.lampHalo) anim.lampHalo.visible = on;
     };
+    let channelName = 'VTEAM';
     let neonFlicker = 0;
     const setNeon = (color) => {
         anim.neon.set(color);
@@ -445,7 +456,7 @@ export async function createRoom({
             case 'door': return 'Open the door';
             case 'poster-nexustv': return 'Look at NexusTV';
             case 'poster-steam': return 'Look at Steam Switcher';
-            case 'poster-honcho': return 'Watch Honcho on the TV';
+            case 'poster-channel': return `Watch ${channelName} on the TV`;
             case 'armchair': return 'Sit down';
             case 'plant': return 'Touch the plant';
             case 'lamp': return state.lamp ? 'Turn the lamp off' : 'Turn the lamp on';
@@ -469,7 +480,7 @@ export async function createRoom({
     const use = (id) => {
         if (!id || state.mode === 'flying' || state.mode === 'attract') return;
         if (id.startsWith('star-')) { collectStar(Number(id.slice(5))); return; }
-        const seat = { pc: 'pc', chair: 'pc', tv: 'tv', sofa: 'tv', 'poster-honcho': 'tv', armchair: 'armchair' }[id];
+        const seat = { pc: 'pc', chair: 'pc', tv: 'tv', sofa: 'tv', 'poster-channel': 'tv', armchair: 'armchair' }[id];
         if (seat) {
             if (state.mode === 'armchair' && seat !== 'armchair') standUp().then(() => sit(seat));
             else if (state.mode === 'walk') sit(seat);
@@ -561,17 +572,50 @@ export async function createRoom({
 
     /* ---------------------------------------------------------------- loop */
     const clock = new THREE.Clock();
-    let fpsTime = 0, fpsFrames = 0, slowWindows = 0, fastWindows = 0;
     const tmpQ = new THREE.Quaternion();
     const tmpE = new THREE.Euler(0, 0, 0, 'YXZ');
+    const frustum = new THREE.Frustum();
+    const viewProj = new THREE.Matrix4();
     let frameCount = 0;
     let firstFrame = true;
+    // 1 = every frame; n = every n-th frame (the view is covered or barely moving); 0 = stop
+    let renderEvery = 1;
+    let perfStart = performance.now(), perfFrames = 0, slowWindows = 0, fastWindows = 0, sluggish = 0, lastFps = 60;
+    const perfGate = performance.now() + 2500; // ignore the first frames (shaders compiling)
+
+    // Trade sharpness for smoothness: measure real frame rate once a second.
+    const adapt = () => {
+        perfFrames++;
+        const now = performance.now();
+        if (now - perfStart < 1000) return;
+        const fps = (perfFrames * 1000) / (now - perfStart);
+        perfStart = now;
+        perfFrames = 0;
+        lastFps = fps;
+        onFps(fps);
+        if (now < perfGate || renderEvery !== 1) return;
+        slowWindows = fps < 45 ? slowWindows + 1 : 0;
+        fastWindows = fps > 58 ? fastWindows + 1 : 0;
+        if (slowWindows && pixelRatio > minRatio) {
+            pixelRatio = Math.max(minRatio, pixelRatio * 0.85);
+            renderer.setPixelRatio(pixelRatio);
+            slowWindows = 0;
+        } else if (fastWindows >= 3 && pixelRatio < maxRatio) {
+            pixelRatio = Math.min(maxRatio, pixelRatio * 1.1);
+            renderer.setPixelRatio(pixelRatio);
+            fastWindows = 0;
+        }
+        // still slow at the lowest sharpness: tell the page once (it can suggest Low)
+        sluggish = pixelRatio <= minRatio && fps < 28 && state.mode === 'walk' ? sluggish + 1 : 0;
+        if (sluggish === 3) onSlow(fps);
+    };
 
     const frame = () => {
+        frameCount++;
+        if (renderEvery === 0 || (renderEvery > 1 && !flight && frameCount % renderEvery)) return;
         const dt = Math.min(0.05, clock.getDelta());
         const t = clock.elapsedTime;
         const now = performance.now();
-        frameCount++;
 
         if (state.mode === 'attract') {
             tmpE.set(Math.sin(t * 0.21) * 0.02, Math.sin(t * 0.13) * 0.07, 0);
@@ -656,31 +700,14 @@ export async function createRoom({
             cssCamera.far = camera.far * CSS_SCALE;
             cssCamera.updateProjectionMatrix();
         }
+        // Screens that are out of view leave the page's layout, so the browser
+        // doesn't keep compositing three big web pages every frame.
+        viewProj.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+        frustum.setFromProjectionMatrix(viewProj);
+        Object.values(screenObjects).forEach((so) => { so.obj.visible = frustum.intersectsSphere(so.sphere); });
         css.render(cssScene, cssCamera);
         if (firstFrame) { firstFrame = false; canvas.dispatchEvent(new CustomEvent('room:frame', { bubbles: true })); }
-
-        // adaptive resolution: trade sharpness for smoothness on slow devices
-        fpsTime += dt;
-        fpsFrames++;
-        if (fpsTime >= 2) {
-            const fps = fpsFrames / fpsTime;
-            onFps(fps);
-            if (state.mode !== 'attract') {
-                slowWindows = fps < 34 ? slowWindows + 1 : 0;
-                fastWindows = fps > 57 ? fastWindows + 1 : 0;
-                if (slowWindows >= 2 && pixelRatio > 0.6) {
-                    pixelRatio = Math.max(0.6, pixelRatio * 0.82);
-                    renderer.setPixelRatio(pixelRatio);
-                    slowWindows = 0;
-                } else if (fastWindows >= 3 && pixelRatio < Math.min(window.devicePixelRatio || 1, maxRatio)) {
-                    pixelRatio = Math.min(Math.min(window.devicePixelRatio || 1, maxRatio), pixelRatio * 1.12);
-                    renderer.setPixelRatio(pixelRatio);
-                    fastWindows = 0;
-                }
-            }
-            fpsTime = 0;
-            fpsFrames = 0;
-        }
+        adapt();
     };
     renderer.setAnimationLoop(frame);
 
@@ -725,6 +752,15 @@ export async function createRoom({
         cycleNeon,
         disco() { state.disco = 12; cycleNeon(); },
         setGolden,
+        setChannel(name) {
+            const clean = String(name || '').trim();
+            if (!clean || clean === channelName) return;
+            channelName = clean;
+            const mat = anim.channelPoster;
+            if (mat.map) mat.map.dispose();
+            mat.map = poster('channel', clean);
+            mat.needsUpdate = true;
+        },
         setPhoneNote(text) { phoneNote = String(text || ''); drawPhone(); },
         screen: (key) => screenObjects[key] && screenObjects[key].wrap,
         // Where a screen is on the page right now (used to lay the real page
@@ -748,7 +784,11 @@ export async function createRoom({
             renderer.render(scene, camera);
             return canvas.toDataURL('image/jpeg', 0.92);
         },
-        get fps() { return fpsFrames / Math.max(fpsTime, 0.001); },
+        get fps() { return lastFps; },
+        get quality() { return quality; },
+        get pixelRatio() { return pixelRatio; },
+        // how often to draw: 1 every frame, n every n-th frame, 0 not at all
+        setRenderRate(n) { renderEvery = n; if (n) clock.getDelta(); },
         debug: { scene, camera, renderer, room, placed, controls, state, pick: (x = 0, y = 0) => pick(new THREE.Vector2(x, y)), hover: () => hover },
     };
 }

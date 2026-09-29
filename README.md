@@ -9,12 +9,12 @@ Gabytzu's site: **a 3D room you walk around in like a game**, served by GitHub P
 | 📺 TV | The YouTube channel: pick a video and it plays on the TV | refreshed every 6 hours |
 | 📱 Phone | Discord: server, invite, live profile (once set up) | yes |
 | 📻 Boombox | Lofi music; the room pulses to the beat | – |
-| 🖼️ Posters | NexusTV, Steam Switcher, Honcho | – |
+| 🖼️ Posters | NexusTV, Steam Switcher, the YouTube channel | – |
 | 💡 Switch, 🪟 window, ✨ neon, 🚪 door, 📷 camera… | lights, day/night, neon colour, links, a photo of the room | – |
 
 **Controls.** Computer: **W A S D** to walk, the mouse to look, **E** or click to use what you aim at, **Esc** for the menu, **1–6** for shortcuts, **M** for music. Phone: the stick to walk, drag to look, tap things to use them. There are **10 hidden stars** to find, and something appears when you have them all.
 
-Visitors whose device can't run WebGL, or who have "reduce motion" turned on, get the **classic page**: the same content as a normal page. The **2D/3D** button switches between the two, and **Menu → Graphics** trades looks for speed.
+Visitors whose device can't run WebGL, or who have "reduce motion" turned on, get the **classic page**: the same content as a normal page. The **2D/3D** button switches between the two, and **Menu → Graphics** trades looks for speed: *Auto* picks Low on phones and built-in graphics, Medium otherwise; *High* adds real glass, area lights and richer materials.
 
 ## Files
 
@@ -33,8 +33,8 @@ Visitors whose device can't run WebGL, or who have "reduce motion" turned on, ge
 
 - **Hide a repo:** add its name to `hiddenRepos` in `assets/live.js` and to `HIDDEN` in `scripts/fetch-live.mjs`.
 - **Description for a repo that has none on GitHub:** add it to `descriptions` in `assets/live.js` (or, better, set it on GitHub).
-- **YouTube channel:** found automatically from `@Raccoon_Team`. If that ever fails, add a repository variable `YT_CHANNEL_ID` (Settings → Secrets and variables → Actions → Variables).
-- **Music:** set `MUSIC_SRC` in `assets/app.js`. For the room to react to the actual beat, put the file in this repo (for example `assets/lofi.mp3`) and point `MUSIC_SRC` at it.
+- **YouTube channel:** found automatically from `@VTEAM2` (`YOUTUBE_HANDLE` in `scripts/fetch-live.mjs`). If that ever fails, add a repository variable `YT_CHANNEL_ID` (Settings → Secrets and variables → Actions → Variables).
+- **Music:** upload an mp3 as `assets/music.mp3`: on GitHub open the `assets` folder → **Add file** → **Upload files**, drop the song, name it exactly `music.mp3`, then **Commit changes** (GitHub takes files up to 25 MB). Until it's there, the player says "No song yet". The boombox and the lights pulse to its beat.
 
 ## Discord profile (live status, avatar, games, Spotify)
 

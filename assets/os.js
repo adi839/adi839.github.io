@@ -436,7 +436,7 @@ export function createDash(root) {
 
 /* ======================================================================= TV */
 
-export function createTV(root, { onPlay = () => {}, onStop = () => {}, channelUrl = 'https://www.youtube.com/@Raccoon_Team' } = {}) {
+export function createTV(root, { onPlay = () => {}, onStop = () => {}, channelUrl = 'https://www.youtube.com/@VTEAM2' } = {}) {
     root.classList.add('tvui');
     root.setAttribute('aria-label', 'TV: YouTube channel');
     root.replaceChildren();
@@ -444,8 +444,8 @@ export function createTV(root, { onPlay = () => {}, onStop = () => {}, channelUr
     const head = el('header', 'tvui__head');
     const logo = el('span', 'tvui__logo', '▶');
     const who = el('div', 'tvui__who');
-    const title = el('b', null, 'Raccoon Team');
-    const handle = el('span', null, '@Raccoon_Team · YouTube');
+    const title = el('b', null, 'VTEAM');
+    const handle = el('span', null, '@VTEAM2 · YouTube');
     who.append(title, handle);
     const sub = el('a', 'tvui__sub', 'Subscribe');
     sub.href = channelUrl;
