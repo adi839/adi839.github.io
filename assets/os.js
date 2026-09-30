@@ -42,6 +42,7 @@ export const APPS = [
     { id: 'youtube', title: 'YouTube', glyph: '▶️', panel: 'youtube', w: 600, h: 590 },
     { id: 'discord', title: 'Discord', glyph: '💬', panel: 'discord', w: 520, h: 470 },
     { id: 'music', title: 'Music', glyph: '🎵', panel: 'music', w: 460, h: 330 },
+    { id: 'skylight', title: 'Skylight', glyph: '🪽', game: true, w: 880, h: 600 },
     { id: 'terminal', title: 'Terminal', glyph: '⌨️', w: 640, h: 400 },
 ];
 
@@ -52,6 +53,7 @@ export function createOS(root, {
     unmount = () => {},      // (panelId) => give the panel back
     actions = {},            // lights(on), night(on), neon(), music(), standUp(), tv(), disco(), classic()
     info = {},               // repos(), stars(), status()
+    game = {},               // quality(), onBest(best), onMilestone(name), copy(text)
     onBoot = () => {},
 } = {}) {
     root.classList.add('os');
@@ -116,6 +118,7 @@ export function createOS(root, {
         windows.delete(id);
         w.win.remove();
         w.task.remove();
+        if (w.destroy) w.destroy();
         if (w.app.panel && !keepPanel) unmount(w.app.panel);
         const last = [...windows.keys()].pop();
         if (last) focus(last);
@@ -144,7 +147,7 @@ export function createOS(root, {
         win.append(head, body);
         const maxW = 1280 - 40, maxH = 720 - 56;
         const w = Math.min(app.w, maxW), h = Math.min(app.h, maxH);
-        const left = Math.min(150 + cascade * 34, 1280 - w - 20);
+        const left = Math.min(250 + cascade * 34, 1280 - w - 20);
         const top = Math.min(24 + cascade * 30, 720 - 48 - h - 8);
         cascade = (cascade + 1) % 7;
         Object.assign(win.style, { left: `${left}px`, top: `${top}px`, width: `${w}px`, height: `${h}px` });
@@ -159,14 +162,26 @@ export function createOS(root, {
 
         if (app.panel) mount(app.panel, body, () => close(id, { keepPanel: true }));
         else if (id === 'terminal') terminal(body);
+        else if (app.game) {
+            win.classList.add('win--game');
+            // the game's code is only loaded the first time it is opened
+            import('./game/skylight.js').then(({ mountSkylight }) => {
+                const entry = windows.get(id);
+                if (!entry || entry.win !== win) return;
+                const sky = mountSkylight(body, { quality: game.quality ? game.quality() : 'medium', onBest: game.onBest, onMilestone: game.onMilestone, copy: game.copy });
+                entry.destroy = () => sky.destroy();
+                entry.pause = () => sky.pause();
+                setTimeout(() => sky.root.focus({ preventScroll: true }), 60);
+            }).catch(() => { body.textContent = 'Could not load the game.'; });
+        }
 
         bClose.addEventListener('click', () => close(id));
-        bMin.addEventListener('click', () => { win.hidden = true; task.classList.remove('is-front'); });
+        bMin.addEventListener('click', () => { const e = windows.get(id); if (e && e.pause) e.pause(); win.hidden = true; task.classList.remove('is-front'); });
         bMax.addEventListener('click', () => win.classList.toggle('is-max'));
         head.addEventListener('dblclick', () => win.classList.toggle('is-max'));
         task.addEventListener('click', () => {
             if (win.hidden || !win.classList.contains('is-front')) focus(id);
-            else { win.hidden = true; task.classList.remove('is-front'); }
+            else { const e = windows.get(id); if (e && e.pause) e.pause(); win.hidden = true; task.classList.remove('is-front'); }
         });
         win.addEventListener('pointerdown', () => focus(id), true);
 
@@ -255,6 +270,7 @@ export function createOS(root, {
                 'whoami            who lives here',
                 'projects          my public projects (live from GitHub)',
                 'open <app>        github · nexustv · steam · youtube · discord · music',
+                'play skylight     a flying game (also: open skylight)',
                 'lights on|off     the room lights',
                 'night | day       change the time outside',
                 'neon              change the neon sign colour',
@@ -273,8 +289,12 @@ export function createOS(root, {
             },
             open: (arg) => {
                 const app = APPS.find((a) => a.id === (arg || '').toLowerCase());
-                if (!app) { print('Usage: open github | nexustv | steam | youtube | discord | music'); return; }
+                if (!app) { print('Usage: open github | nexustv | steam | youtube | discord | music | skylight'); return; }
                 open(app.id);
+            },
+            play: (arg) => {
+                if (!arg || arg.toLowerCase() === 'skylight') { open('skylight'); print('Opening Skylight… hold to glide, tap to flap 🪽'); }
+                else print('Games: skylight');
             },
             lights: (arg) => {
                 if (arg !== 'on' && arg !== 'off') { print('Usage: lights on | lights off'); return; }
@@ -344,6 +364,8 @@ export function createOS(root, {
             }, 900);
         },
         setFlat(on) { root.classList.toggle('is-flat', on); },
+        // a game keeps running behind you otherwise: pause the apps that can pause
+        pauseApps() { windows.forEach((w) => { if (w.pause) w.pause(); }); },
         setStatus(text, status) {
             trayStatus.hidden = !text;
             trayStatus.textContent = text || '';
@@ -363,7 +385,9 @@ export function createDash(root) {
     const top = el('div', 'dash__top');
     const clock = el('b', 'dash__time', time());
     const date = el('span', 'dash__date', day());
-    top.append(clock, date);
+    const gameLine = el('span', 'dash__game');
+    gameLine.hidden = true;
+    top.append(clock, date, gameLine);
 
     const card = (label) => {
         const c = el('section', 'dash__card');
@@ -431,6 +455,15 @@ export function createDash(root) {
             root.dataset.music = state;
         },
         setLevel(v) { root.style.setProperty('--lv', v.toFixed(3)); },
+        // best Skylight scores, once someone has played
+        setGame({ free = 0, daily = null } = {}) {
+            const today = new Date().toISOString().slice(0, 10);
+            const parts = [];
+            if (free) parts.push(`best ${free.toLocaleString('en')}`);
+            if (daily && daily.key === today && daily.score) parts.push(`today ${daily.score.toLocaleString('en')}`);
+            gameLine.hidden = !parts.length;
+            gameLine.textContent = parts.length ? `🪽 Skylight · ${parts.join(' · ')}` : '';
+        },
     };
 }
 

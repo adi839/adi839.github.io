@@ -253,6 +253,7 @@ export async function createRoom({
         if (lights.lamp) lights.lamp.intensity = on ? 1.4 : 0;
         if (anim.lampHalo) anim.lampHalo.visible = on;
     };
+    const neonColors = [...NEON_COLORS];
     let channelName = 'VTEAM';
     let neonFlicker = 0;
     const setNeon = (color) => {
@@ -260,8 +261,8 @@ export async function createRoom({
         neonFlicker = 0.8;
     };
     const cycleNeon = () => {
-        state.neon = (state.neon + 1) % NEON_COLORS.length;
-        setNeon(state.golden && state.neon === 0 ? '#fbbf24' : NEON_COLORS[state.neon]);
+        state.neon = (state.neon + 1) % neonColors.length;
+        setNeon(state.golden && state.neon === 0 ? '#fbbf24' : neonColors[state.neon]);
         sfx.buzz();
     };
     const setGolden = (on) => {
@@ -752,6 +753,11 @@ export async function createRoom({
         cycleNeon,
         disco() { state.disco = 12; cycleNeon(); },
         setGolden,
+        // a prize colour for the neon sign (Skylight): added to the cycle, and shown once
+        unlockNeon(color, { show = false } = {}) {
+            if (!neonColors.includes(color)) neonColors.push(color);
+            if (show) { state.neon = neonColors.indexOf(color); setNeon(color); sfx.buzz(); }
+        },
         setChannel(name) {
             const clean = String(name || '').trim();
             if (!clean || clean === channelName) return;

@@ -5,6 +5,7 @@ import * as sfx from './sfx.js';
 // Add file → Upload files). Being on this site, the room can also pulse to its beat.
 const MUSIC_SRC = 'assets/music.mp3';
 const TOTAL_STARS = 10;
+const AURORA = '#7cffcb';   // the neon colour Skylight unlocks
 
 const $ = (sel) => document.querySelector(sel);
 const html = document.documentElement;
@@ -442,6 +443,7 @@ window.addEventListener('resize', () => {
 
 const standUp = (gesture) => {
     if (!room || !['pc', 'tv', 'armchair'].includes(room.mode)) return;
+    screens.os.pauseApps();
     unpresent();
     room.standUp();
     if (gesture && !touch && !room.dragMode) room.lock();
@@ -635,6 +637,12 @@ const bootRoom = async () => {
                 disco: () => room.disco(),
             },
             info: { repos: () => repos, stars: () => starsFound.length },
+            game: {
+                quality: () => room ? room.quality : pickQuality(),
+                onBest: (best) => screens.dash.setGame(best),
+                onMilestone: (name) => { if (name === 'aurora') room.unlockNeon(AURORA, { show: true }); },
+                copy: async (text) => { const ok = await copyText(text); toast(ok ? 'Result copied 📋' : "Couldn't copy the result"); return ok; },
+            },
         }),
         dash: createDash($('#dash')),
         tv: createTV($('#tvui')),
@@ -644,6 +652,7 @@ const bootRoom = async () => {
         screens.dash.setMusic(state);
     });
     screens.dash.setMusic(musicState);
+    try { screens.dash.setGame(JSON.parse(localStorage.getItem('skylight') || '{}')); } catch { /* no scores yet */ }
     Object.entries(latest).forEach(([kind, data]) => { if (data) show[kind](data); });
 
     const hour = new Date().getHours();
@@ -720,6 +729,7 @@ const bootRoom = async () => {
     room.setSensitivity(Number(sensInput.value));
     room.dragMode = dragInput.checked;
     if (phoneNote) room.setPhoneNote(phoneNote);
+    try { if (JSON.parse(localStorage.getItem('skylight') || '{}').aurora) room.unlockNeon(AURORA); } catch { /* no scores yet */ }
     if (latest.youtube && latest.youtube.channel) room.setChannel(latest.youtube.channel.title);
     window.__room = room;
 
