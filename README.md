@@ -7,6 +7,7 @@ Gabytzu's site: **a 3D room you walk around in like a game**, served by GitHub P
 | 💻 PC | Sit down and use **GabyOS**: windows for GitHub, NexusTV, Steam Switcher, YouTube, Discord, Music, About me, and a terminal (`help`, `lights off`, `night`, `neon`…) | yes |
 | 🖥️ Side monitor | Clock, Discord server, newest video, GitHub activity | yes |
 | 📺 TV | The YouTube channel: pick a video and it plays on the TV | refreshed every 6 hours |
+| 🪽 Skylight | A flying game in GabyOS (`play skylight` in the terminal): hold to glide, tap to flap, catch light, light lanterns, dodge storms and rocks. *Free flight* or the *Daily flight*, the same course for everyone that day. Your best score shows on the side monitor, and 2000 m unlocks a new neon colour | saved in your browser |
 | 📱 Phone | Discord: server, invite, live profile (once set up) | yes |
 | 📻 Boombox | Lofi music; the room pulses to the beat | – |
 | 🖼️ Posters | NexusTV, Steam Switcher, the YouTube channel | – |
@@ -20,6 +21,7 @@ Visitors whose device can't run WebGL, or who have "reduce motion" turned on, ge
 
 - `index.html`: the page, the room's overlays (start screen, menu, prompts) and all panel content (also the classic page).
 - `assets/room/`: the 3D room. `build.js` builds it (walls, furniture, lights, stars), `textures.js` draws the generated textures, `controls.js` is walking and looking, `index.js` runs it all (loading, screens, using things, day/night).
+- `assets/game/`: Skylight. `skylight-core.js` holds the rules (physics, terrain from a seed, score) with no drawing, `skylight.js` draws it and handles input and screens.
 - `assets/os.js`: what the screens show: GabyOS on the PC, the dashboard on the side monitor, the channel on the TV.
 - `assets/app.js`: glue: menus, the phone, posters, music, star hunt, settings, view switching. `MUSIC_SRC` is at the top.
 - `assets/live.js`: GitHub, YouTube and Discord data. Settings are in the `CONFIG` block at the top.

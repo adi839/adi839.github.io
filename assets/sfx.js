@@ -85,3 +85,10 @@ export const buzz = () => { tone({ freq: 120, type: 'sawtooth', dur: 0.12, gain:
 export const vroom = () => { tone({ freq: 70, to: 180, type: 'sawtooth', dur: 0.5, gain: 0.07, attack: 0.05 }); tone({ freq: 180, to: 60, type: 'sawtooth', dur: 0.45, gain: 0.05, delay: 0.55 }); };
 export const gulp = () => [0, 0.16].forEach((d) => tone({ freq: 260, to: 520, type: 'sine', dur: 0.1, gain: 0.14, delay: d }));
 export const tvOn = () => { noise({ dur: 0.22, gain: 0.12, type: 'bandpass', freq: 2400, q: 0.5 }); tone({ freq: 15600, type: 'sine', dur: 0.4, gain: 0.015 }); };
+
+// Skylight
+export const orb = (combo = 1) => tone({ freq: 660 + Math.min(4, combo) * 110, to: 990 + Math.min(4, combo) * 130, type: 'sine', dur: 0.14, gain: 0.1 });
+export const lantern = () => [523, 659, 784].forEach((f, i) => tone({ freq: f, type: 'triangle', dur: 0.35, gain: 0.11, delay: i * 0.09 }));
+export const flap = () => noise({ dur: 0.09, gain: 0.07, type: 'bandpass', freq: 900, to: 1600, q: 0.7 });
+export const crash = () => { noise({ dur: 0.25, gain: 0.3, type: 'lowpass', freq: 500, to: 120 }); tone({ freq: 140, to: 60, type: 'sawtooth', dur: 0.25, gain: 0.12 }); };
+export const stormy = () => noise({ dur: 0.6, gain: 0.1, type: 'lowpass', freq: 220, to: 90, attack: 0.2 });
